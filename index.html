@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Our Love Hydration</title>
     
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/240/droplet.png">
-    <meta name="apple-mobile-web-app-title" content="Love Water">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
+
+    <meta name="apple-mobile-web-app-title" content="Our Love Hydration">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -66,6 +70,7 @@
         .reward-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ffebee; }
         .history-list { text-align: left; max-height: 200px; overflow-y: auto; font-size: 0.9rem; margin-top: 10px;}
         .history-entry { padding: 8px 0; border-bottom: 1px dashed #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .version { font-size: 0.6rem; color: #fff; margin-top: 20px; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -123,10 +128,11 @@
 
     <div class="card">
         <h3 style="color: #d63031; margin: 0 0 10px 0;">⚙️ Goal Settings</h3>
-        <p style="font-size: 0.8rem; color: #777;">Set your daily target (ml):</p>
         <input type="number" id="input-goal" placeholder="e.g. 2500">
         <button class="btn-save" onclick="updateGoal()">Save New Goal</button>
     </div>
+
+    <div class="version">Our Love Hydration v1.4</div>
 </div>
 
 <script>
@@ -150,7 +156,7 @@
         if(newGoal > 0) {
             stats.goal = newGoal;
             saveAndRefresh();
-            alert("Goal updated successfully! ❤️");
+            alert("Goal updated to " + newGoal + "ml! ❤️");
         }
     }
 
@@ -167,7 +173,7 @@
     }
 
     function resetTodayIntake() {
-        if(confirm("Do you want to reset your water for today?")) {
+        if(confirm("Reset water for today? Your coins are safe! ❤️")) {
             const today = new Date().toLocaleDateString();
             stats.daily[today] = 0;
             saveAndRefresh();
@@ -187,7 +193,7 @@
     }
 
     function clearHistory() {
-        if(confirm("Did you receive these in person? 🥰")) {
+        if(confirm("Clear history? 🥰")) {
             stats.history = [];
             saveAndRefresh();
         }
