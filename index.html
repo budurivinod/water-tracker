@@ -31,6 +31,9 @@
         input { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
         button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
         .entry { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .status-badge { font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; cursor: pointer; }
+        .pending { background: #ffeaa7; color: #d35400; }
+        .cleared { background: #55efc4; color: #00b894; }
         #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 2000; text-align: center; }
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center; z-index:9999; }
     </style>
@@ -67,20 +70,28 @@
             <button style="background: #fab1a0; width: 100%; margin-top:10px; font-size:0.8rem;" onclick="resetToday()">Reset Today's Water 🔄</button>
         </div>
     </div>
-    
+
     <div id="p-rewards" class="page">
         <div class="card">
             <h3 style="color:#d63031; margin-top:0;">🎁 Reward Shop</h3>
+            <div class="entry"><span>Vacation (✈️)</span><button style="background:#6c5ce7;" onclick="redeem(1000, 'Vacation ✈️')">1000</button></div>
+            <div class="entry"><span>Special Date (🕯️)</span><button style="background:#6c5ce7;" onclick="redeem(500, 'Special Date 🕯️')">500</button></div>
+            <div class="entry"><span>Wish (✨)</span><button style="background:#6c5ce7;" onclick="redeem(300, 'Wish ✨')">300</button></div>
+            <div class="entry"><span>Movie (🎬)</span><button style="background:#6c5ce7;" onclick="redeem(200, 'Movie 🎬')">200</button></div>
+            <div class="entry"><span>Dinner (🍽️)</span><button style="background:#6c5ce7;" onclick="redeem(800, 'Candle light dinner 🍽️')">800</button></div>
+            <hr>
             <div class="entry"><span>Hug (🫂)</span><button style="background:#6c5ce7;" onclick="redeem(50, 'Hug 🫂')">50</button></div>
             <div class="entry"><span>Kiss (😘)</span><button style="background:#6c5ce7;" onclick="redeem(100, 'Kiss 😘')">100</button></div>
-            <div class="entry"><span>Special Date (🕯️)</span><button style="background:#6c5ce7;" onclick="redeem(500, 'Date 🕯️')">500</button></div>
         </div>
     </div>
 
     <div id="p-passbook" class="page">
         <div class="card">
-            <h3 style="color:#d63031; margin-top:0;">📜 Our Love History</h3>
-            <div id="passbook-list" style="text-align:left; max-height:400px; overflow-y:auto;"></div>
+            <h3 style="color:#d63031; margin-top:0;">📜 Claimed Rewards</h3>
+            <div id="reward-claims-list" style="text-align:left; margin-bottom:20px;"></div>
+            <hr>
+            <h3 style="color:#d63031; margin-top:20px;">🪙 Coin Passbook</h3>
+            <div id="passbook-list" style="text-align:left; max-height:300px; overflow-y:auto;"></div>
         </div>
     </div>
 
@@ -123,16 +134,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let userId = localStorage.getItem('loveTrackerUserId') || 'user_main';
-    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0, lastCheck: "" };
+    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], rewardClaims: [], streak: 0, lastCheck: "" };
     let chart;
 
-    // Fixed Sync to ensure it updates immediately
     db.ref('users/' + userId).on('value', (snap) => {
         if(snap.exists()) {
             stats = snap.val();
-            // Initialize missing structures
-            if(!stats.daily) stats.daily = {};
-            if(!stats.passbook) stats.passbook = [];
+            if(!stats.rewardClaims) stats.rewardClaims = [];
         }
         document.getElementById('loading').style.display = 'none';
         checkPenalty();
@@ -140,50 +148,67 @@
     });
 
     function drinkWater() {
-        const drinkInput = document.getElementById('drink-amount');
-        const amt = parseInt(drinkInput.value) || 0;
-        if (amt <= 0) return;
-
+        const amt = parseInt(document.getElementById('drink-amount').value) || 0;
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        const oldIntake = stats.daily[today] || 0;
-        const newIntake = oldIntake + amt;
-        
-        // Update local stats first for instant visual feedback
-        stats.daily[today] = newIntake;
+        const old = stats.daily[today] || 0;
+        stats.daily[today] = old + amt;
 
-        // 1. Check Goal Completion
-        if (newIntake >= stats.goal && oldIntake < stats.goal) {
+        if (stats.daily[today] >= stats.goal && old < stats.goal) {
             stats.coins = (stats.coins || 0) + 10;
             stats.streak = (stats.streak || 0) + 1;
             logPass("Target Reached! ❤️", 10);
-            
             if (stats.streak % 3 === 0) {
                 stats.coins += 10;
                 logPass("3-Day Streak Bonus! 🔥", 10);
             }
             document.getElementById('love-overlay').style.display = 'flex';
         }
-
-        // 2. Check Bonus Coins (2 coins per 500ml after goal)
-        if (newIntake > stats.goal) {
-            const oldExcess = Math.max(0, oldIntake - stats.goal);
-            const newExcess = newIntake - stats.goal;
-            const oldUnits = Math.floor(oldExcess / 500);
-            const newUnits = Math.floor(newExcess / 500);
-            
-            if (newUnits > oldUnits) {
+        
+        if (stats.daily[today] > stats.goal) {
+            const oldUnits = Math.floor(Math.max(0, old - stats.goal) / 500);
+            const newUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
+            if (newUnits > oldUnits && newUnits > 0) {
                 const bonus = (newUnits - oldUnits) * 2;
                 stats.coins = (stats.coins || 0) + bonus;
                 logPass("Extra Bonus! 🌟", bonus);
             }
         }
-
-        // 3. Save to Firebase
         db.ref('users/' + userId).set(stats);
-        updateUI(); // Immediate UI update
     }
 
-    // Remaining logic for Reset, Penalty, and UI remains the same
+    function redeem(cost, item) {
+        if(stats.coins >= cost) {
+            stats.coins -= cost;
+            const claim = { item, cost, date: new Date().toLocaleDateString(), status: 'pending', id: Date.now() };
+            stats.rewardClaims.unshift(claim);
+            logPass(`Redeemed: ${item}`, -cost);
+            db.ref('users/' + userId).set(stats);
+            alert("Baby, you redeemed " + item + "! Wait for Baby to clear it. 😘");
+        } else {
+            alert("Keep drinking water Baby! ❤️");
+        }
+    }
+
+    function toggleClaimStatus(id) {
+        const claim = stats.rewardClaims.find(c => c.id === id);
+        if(claim) {
+            claim.status = claim.status === 'pending' ? 'cleared' : 'pending';
+            db.ref('users/' + userId).set(stats);
+        }
+    }
+
+    function deleteClaim(id) {
+        if(confirm("Clear this from history?")) {
+            stats.rewardClaims = stats.rewardClaims.filter(c => c.id !== id);
+            db.ref('users/' + userId).set(stats);
+        }
+    }
+
+    function logPass(msg, amt) {
+        if(!stats.passbook) stats.passbook = [];
+        stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
+    }
+
     function resetToday() {
         if(confirm("Baby, reset today?")) {
             const today = new Date().toLocaleDateString().replace(/\//g, '-');
@@ -208,8 +233,7 @@
     function checkPenalty() {
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
         if (stats.lastCheck === today) return;
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
         const yIntake = stats.daily[yKey] || 0;
         if (yIntake < stats.goal && yIntake > 0) {
@@ -225,11 +249,6 @@
         db.ref('users/' + userId).set(stats);
     }
 
-    function logPass(msg, amt) {
-        if(!stats.passbook) stats.passbook = [];
-        stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
-    }
-
     function updateUI() {
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
         const curr = stats.daily[today] || 0;
@@ -238,16 +257,24 @@
         document.getElementById('display-goal').innerText = stats.goal;
         const p = Math.min((curr / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
-        const hContainer = document.getElementById('streak-hearts');
-        hContainer.innerHTML = '';
-        const hearts = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
-        for(let i=0; i<hearts; i++) hContainer.innerHTML += '❤️ ';
+        
+        // Reward Claims List
+        document.getElementById('reward-claims-list').innerHTML = (stats.rewardClaims || []).map(c => `
+            <div class="entry">
+                <span><b>${c.item}</b><br><small>${c.date}</small></span>
+                <div>
+                    <span class="status-badge ${c.status}" onclick="toggleClaimStatus(${c.id})">${c.status.toUpperCase()}</span>
+                    <span style="margin-left:10px; color:#999; cursor:pointer;" onclick="deleteClaim(${c.id})">🗑️</span>
+                </div>
+            </div>
+        `).join('') || '<p style="text-align:center;">No rewards claimed yet.</p>';
+
         document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
             <div class="entry">
                 <span>${p.msg}<br><small>${p.date}</small></span>
                 <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
             </div>
-        `).join('') || '<p style="text-align:center;">No history</p>';
+        `).join('') || '<p style="text-align:center;">No coin history yet.</p>';
     }
 
     function showPage(p) {
@@ -267,17 +294,6 @@
             data: { labels: dates, datasets: [{ label: 'ml', data: dates.map(d => stats.daily[d]), backgroundColor: '#ff4b2b' }] },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
-    }
-
-    function redeem(cost, item) {
-        if(stats.coins >= cost) {
-            stats.coins -= cost;
-            logPass(`Redeemed: ${item}`, -cost);
-            db.ref('users/' + userId).set(stats);
-            alert("Baby, you redeemed " + item + "! 😘");
-        } else {
-            alert("Keep drinking water, Baby! ❤️");
-        }
     }
 
     function sendRequest() {
