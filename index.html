@@ -67,7 +67,7 @@
             <button style="background: #fab1a0; width: 100%; margin-top:10px; font-size:0.8rem;" onclick="resetToday()">Reset Today's Water 🔄</button>
         </div>
     </div>
-
+    
     <div id="p-rewards" class="page">
         <div class="card">
             <h3 style="color:#d63031; margin-top:0;">🎁 Reward Shop</h3>
@@ -126,65 +126,64 @@
     let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0, lastCheck: "" };
     let chart;
 
+    // Fixed Sync to ensure it updates immediately
     db.ref('users/' + userId).on('value', (snap) => {
-        if(snap.exists()) stats = snap.val();
+        if(snap.exists()) {
+            stats = snap.val();
+            // Initialize missing structures
+            if(!stats.daily) stats.daily = {};
+            if(!stats.passbook) stats.passbook = [];
+        }
         document.getElementById('loading').style.display = 'none';
         checkPenalty();
         updateUI();
-        if(document.getElementById('p-stats').classList.contains('active')) renderChart();
     });
 
-    function checkPenalty() {
-        const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        if (stats.lastCheck === today) return;
-
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
-        const yIntake = stats.daily[yKey] || 0;
-
-        if (yIntake < stats.goal && yIntake > 0) {
-            const diff = stats.goal - yIntake;
-            const penalty = Math.floor(diff / 500) * 5;
-            if (penalty > 0) {
-                stats.coins = (stats.coins || 0) - penalty;
-                stats.streak = 0;
-                logPass(`Penalty: Missed Target (${yKey})`, -penalty);
-            }
-        }
-        stats.lastCheck = today;
-        db.ref('users/' + userId).set(stats);
-    }
-
     function drinkWater() {
-        const amt = parseInt(document.getElementById('drink-amount').value) || 0;
-        const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        const old = stats.daily[today] || 0;
-        stats.daily[today] = old + amt;
+        const drinkInput = document.getElementById('drink-amount');
+        const amt = parseInt(drinkInput.value) || 0;
+        if (amt <= 0) return;
 
-        if (stats.daily[today] >= stats.goal && old < stats.goal) {
+        const today = new Date().toLocaleDateString().replace(/\//g, '-');
+        const oldIntake = stats.daily[today] || 0;
+        const newIntake = oldIntake + amt;
+        
+        // Update local stats first for instant visual feedback
+        stats.daily[today] = newIntake;
+
+        // 1. Check Goal Completion
+        if (newIntake >= stats.goal && oldIntake < stats.goal) {
             stats.coins = (stats.coins || 0) + 10;
             stats.streak = (stats.streak || 0) + 1;
             logPass("Target Reached! ❤️", 10);
+            
             if (stats.streak % 3 === 0) {
                 stats.coins += 10;
                 logPass("3-Day Streak Bonus! 🔥", 10);
             }
             document.getElementById('love-overlay').style.display = 'flex';
         }
-        
-        if (stats.daily[today] > stats.goal) {
-            const oldUnits = Math.floor(Math.max(0, old - stats.goal) / 500);
-            const newUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
-            if (newUnits > oldUnits && newUnits > 0) {
+
+        // 2. Check Bonus Coins (2 coins per 500ml after goal)
+        if (newIntake > stats.goal) {
+            const oldExcess = Math.max(0, oldIntake - stats.goal);
+            const newExcess = newIntake - stats.goal;
+            const oldUnits = Math.floor(oldExcess / 500);
+            const newUnits = Math.floor(newExcess / 500);
+            
+            if (newUnits > oldUnits) {
                 const bonus = (newUnits - oldUnits) * 2;
                 stats.coins = (stats.coins || 0) + bonus;
                 logPass("Extra Bonus! 🌟", bonus);
             }
         }
+
+        // 3. Save to Firebase
         db.ref('users/' + userId).set(stats);
+        updateUI(); // Immediate UI update
     }
 
+    // Remaining logic for Reset, Penalty, and UI remains the same
     function resetToday() {
         if(confirm("Baby, reset today?")) {
             const today = new Date().toLocaleDateString().replace(/\//g, '-');
@@ -193,7 +192,6 @@
                 stats.coins = Math.max(0, stats.coins - 10);
                 stats.streak = Math.max(0, stats.streak - 1);
                 logPass("Reset: Goal Deducted 🔄", -10);
-                
                 const excess = Math.max(0, current - stats.goal);
                 const bonusUnits = Math.floor(excess / 500);
                 if(bonusUnits > 0) {
@@ -205,6 +203,26 @@
             stats.daily[today] = 0;
             db.ref('users/' + userId).set(stats);
         }
+    }
+
+    function checkPenalty() {
+        const today = new Date().toLocaleDateString().replace(/\//g, '-');
+        if (stats.lastCheck === today) return;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
+        const yIntake = stats.daily[yKey] || 0;
+        if (yIntake < stats.goal && yIntake > 0) {
+            const diff = stats.goal - yIntake;
+            const penalty = Math.floor(diff / 500) * 5;
+            if (penalty > 0) {
+                stats.coins = (stats.coins || 0) - penalty;
+                stats.streak = 0;
+                logPass(`Penalty: Missed Target (${yKey})`, -penalty);
+            }
+        }
+        stats.lastCheck = today;
+        db.ref('users/' + userId).set(stats);
     }
 
     function logPass(msg, amt) {
@@ -220,12 +238,10 @@
         document.getElementById('display-goal').innerText = stats.goal;
         const p = Math.min((curr / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
-        
         const hContainer = document.getElementById('streak-hearts');
         hContainer.innerHTML = '';
         const hearts = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
         for(let i=0; i<hearts; i++) hContainer.innerHTML += '❤️ ';
-        
         document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
             <div class="entry">
                 <span>${p.msg}<br><small>${p.date}</small></span>
