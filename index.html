@@ -64,7 +64,7 @@
             </div>
             <input type="number" id="drink-amount" value="250">
             <button style="background: linear-gradient(to right, #00d2ff, #3a7bd5); width: 100%;" onclick="drinkWater()">Drink 💧</button>
-            <button style="background: #fab1a0; width: 100%; margin-top:10px; font-size:0.8rem;" onclick="resetToday()">Reset Today's Water 🔄</button>
+            <button style="background: #fab1a0; width: 100%; margin-top:10px; font-size:0.8rem;" onclick="resetToday()">Reset Today 🔄</button>
         </div>
     </div>
 
@@ -129,6 +129,11 @@
     db.ref('users/' + userId).on('value', (snap) => {
         if(snap.exists()) stats = snap.val();
         document.getElementById('loading').style.display = 'none';
+        
+        // Ensure critical fields exist
+        if(!stats.daily) stats.daily = {};
+        if(!stats.passbook) stats.passbook = [];
+        
         checkPenalty();
         updateUI();
     });
@@ -142,15 +147,19 @@
         const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
         const yIntake = stats.daily[yKey] || 0;
 
+        // If yesterday was tracked but target wasn't hit
         if (yIntake < stats.goal && yIntake > 0) {
             const diff = stats.goal - yIntake;
-            const penalty = Math.floor(diff / 500) * 5;
+            const penaltyUnits = Math.floor(diff / 500);
+            const penalty = penaltyUnits * 5;
+            
             if (penalty > 0) {
-                stats.coins -= penalty;
-                stats.streak = 0;
+                stats.coins = (stats.coins || 0) - penalty;
+                stats.streak = 0; // Break the streak
                 logPass(`Penalty: Missed Target (${yKey})`, -penalty);
             }
         }
+        
         stats.lastCheck = today;
         db.ref('users/' + userId).set(stats);
     }
@@ -158,14 +167,18 @@
     function drinkWater() {
         const amt = parseInt(document.getElementById('drink-amount').value) || 0;
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        const old = stats.daily[today] || 0;
-        stats.daily[today] = old + amt;
+        const oldTotal = stats.daily[today] || 0;
+        const newTotal = oldTotal + amt;
+        
+        stats.daily[today] = newTotal;
 
-        // Daily Goal + Streak
-        if (stats.daily[today] >= stats.goal && old < stats.goal) {
-            stats.coins += 10;
+        // 1. Goal Reached Logic
+        if (newTotal >= stats.goal && oldTotal < stats.goal) {
+            stats.coins = (stats.coins || 0) + 10;
             stats.streak = (stats.streak || 0) + 1;
             logPass("Target Reached! ❤️", 10);
+            
+            // 3-Day Streak Bonus
             if (stats.streak % 3 === 0) {
                 stats.coins += 10;
                 logPass("3-Day Streak Bonus! 🔥", 10);
@@ -173,28 +186,45 @@
             document.getElementById('love-overlay').style.display = 'flex';
         }
         
-        // Bonus (2 coins per 500ml extra)
-        if (stats.daily[today] > stats.goal) {
-            const oldUnits = Math.floor((old - stats.goal) / 500);
-            const newUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
-            if (newUnits > oldUnits && newUnits > 0) {
-                const bonus = (newUnits - Math.max(0, oldUnits)) * 2;
-                stats.coins += bonus;
-                logPass("Extra Bonus! 🌟", bonus);
+        // 2. Bonus Logic (2 coins per 500ml extra AFTER reaching target)
+        if (newTotal > stats.goal) {
+            const oldExcess = Math.max(0, oldTotal - stats.goal);
+            const newExcess = newTotal - stats.goal;
+            
+            const oldBonusUnits = Math.floor(oldExcess / 500);
+            const newBonusUnits = Math.floor(newExcess / 500);
+            
+            if (newBonusUnits > oldBonusUnits) {
+                const bonusAwarded = (newBonusUnits - oldBonusUnits) * 2;
+                stats.coins += bonusAwarded;
+                logPass("Extra Bonus! 🌟", bonusAwarded);
             }
         }
-        db.ref('users/' + userId).set(stats);
+        
+        db.ref('users/' + userId).update(stats);
     }
 
     function resetToday() {
         if(confirm("Baby, reset today?")) {
             const today = new Date().toLocaleDateString().replace(/\//g, '-');
             const current = stats.daily[today] || 0;
+            
+            // Reverse coins if they hit target
             if (current >= stats.goal) {
                 stats.coins = Math.max(0, stats.coins - 10);
                 stats.streak = Math.max(0, stats.streak - 1);
                 logPass("Reset: Goal Deducted 🔄", -10);
             }
+            
+            // Also reverse any bonuses earned today
+            const excess = Math.max(0, current - stats.goal);
+            const bonusUnits = Math.floor(excess / 500);
+            if(bonusUnits > 0) {
+                const bonusToDeduct = bonusUnits * 2;
+                stats.coins = Math.max(0, stats.coins - bonusToDeduct);
+                logPass("Reset: Bonus Deducted 🔄", -bonusToDeduct);
+            }
+
             stats.daily[today] = 0;
             db.ref('users/' + userId).set(stats);
         }
@@ -209,22 +239,24 @@
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
         const curr = stats.daily[today] || 0;
         document.getElementById('current-ml').innerText = curr;
-        document.getElementById('coin-count').innerText = stats.coins;
+        document.getElementById('coin-count').innerText = stats.coins || 0;
         document.getElementById('display-goal').innerText = stats.goal;
-        const p = Math.min((curr / stats.goal) * 360, 360);
-        document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
+        
+        const progressPercent = Math.min((curr / stats.goal) * 360, 360);
+        document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${progressPercent}deg, #ffebee 0deg)`;
         
         const hContainer = document.getElementById('streak-hearts');
         hContainer.innerHTML = '';
         const hearts = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
         for(let i=0; i<hearts; i++) hContainer.innerHTML += '❤️ ';
         
-        document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
+        const passList = document.getElementById('passbook-list');
+        passList.innerHTML = (stats.passbook || []).map(p => `
             <div class="entry">
                 <span>${p.msg}<br><small>${p.date}</small></span>
                 <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
             </div>
-        `).join('') || '<p style="text-align:center;">No history</p>';
+        `).join('') || '<p style="text-align:center;">No history yet</p>';
     }
 
     function showPage(p) {
@@ -232,6 +264,26 @@
         document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
         document.getElementById('p-' + p).classList.add('active');
         event.currentTarget.classList.add('active');
+    }
+    
+    function redeem(cost, item) {
+        if(stats.coins >= cost) {
+            stats.coins -= cost;
+            logPass(`Redeemed: ${item}`, -cost);
+            db.ref('users/' + userId).set(stats);
+            alert("Baby, you redeemed " + item + "! 😘");
+        } else {
+            alert("Keep drinking Baby! ❤️");
+        }
+    }
+    
+    function sendRequest() {
+        const val = document.getElementById('request-goal-input').value;
+        if(val > 0) {
+            stats.request = "Request: " + val + "ml";
+            db.ref('users/' + userId).update({ request: stats.request });
+            alert("Request sent to Baby! 😘");
+        }
     }
 </script>
 </body>
