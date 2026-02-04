@@ -27,7 +27,11 @@
         .page.active { display: block; }
         input, select { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
         button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 5px; width: 100%; }
-        .admin-section { display: none; background: #fff3f3; padding: 15px; border-radius: 15px; border: 2px dashed #ff7675; margin-top: 15px; }
+        
+        /* STRICTLY HIDDEN ADMIN SECTION */
+        .admin-section { display: none !important; background: #fff3f3; padding: 15px; border-radius: 15px; border: 2px dashed #ff7675; margin-top: 15px; }
+        .admin-section.visible { display: block !important; }
+        
         #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 2000; text-align: center; }
     </style>
 </head>
@@ -61,21 +65,27 @@
     <div id="p-request" class="page">
         <div class="card">
             <h3>💌 Goal Request</h3>
+            <p style="font-size: 0.8rem; color: #666;">Need to change the target? Ask your Baby!</p>
             <input type="number" id="request-goal-input" placeholder="New Target ml">
             <button style="background: #6c5ce7;" onclick="sendRequest()">Ask My Baby 💌</button>
             
-            <button style="background: #ccc; margin-top: 20px; color: #333;" onclick="unlockAdmin()">Enter Admin Key 🔒</button>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            
+            <button style="background: #ccc; color: #333;" onclick="unlockAdmin()">Enter Admin Key 🔒</button>
             
             <div id="admin-controls" class="admin-section">
                 <h4>🔒 Live Admin Panel</h4>
-                <p style="font-size: 0.8rem;">Monitor & Manage Devices:</p>
                 <select id="admin-target-user" onchange="switchAdminTarget()"></select>
 
                 <div id="admin-actions" style="display:none; margin-top: 15px;">
-                    <input type="number" id="admin-coins" placeholder="Set Total Coins">
+                    <input type="number" id="admin-coins" placeholder="Set New Coin Total">
                     <button style="background:#2ecc71;" onclick="adminUpdateCoins()">Update Coins</button>
-                    <input type="number" id="admin-goal" placeholder="Set Daily Goal">
-                    <button style="background:#e67e22;" onclick="adminUpdateGoal()">Set Goal</button>
+                    
+                    <input type="text" id="admin-reward" placeholder="Gift Custom Reward">
+                    <button style="background:#f1c40f;" onclick="adminAddReward()">Gift Reward</button>
+                    
+                    <input type="number" id="admin-goal" placeholder="Set New Goal ml">
+                    <button style="background:#e67e22;" onclick="adminUpdateGoal()">Update Goal</button>
                 </div>
             </div>
         </div>
@@ -105,22 +115,17 @@
     localStorage.setItem('loveTrackerUserId', myId);
     document.getElementById('my-device-id').innerText = myId;
 
-    // --- LIVE STATUS HEARTBEAT ---
     function updatePresence() {
         const now = Date.now();
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        db.ref('users/' + myId).update({ 
-            lastActive: now,
-            lastSeen: timeStr 
-        });
+        db.ref('users/' + myId).update({ lastActive: now, lastSeen: timeStr });
     }
-    setInterval(updatePresence, 5000); // Heartbeat every 5 seconds
+    setInterval(updatePresence, 5000);
     updatePresence();
 
     let stats = { daily: {}, coins: 0, goal: 2000 };
     let adminTargetId = "";
 
-    // --- POPULATE ADMIN LIST WITH LIVE INDICATOR ---
     db.ref('users').on('value', (snap) => {
         const select = document.getElementById('admin-target-user');
         const currentVal = select.value;
@@ -130,9 +135,8 @@
         if(snap.exists()) {
             const users = snap.val();
             Object.keys(users).forEach(id => {
-                const isOnline = (now - users[id].lastActive) < 15000; // Online if active in last 15s
+                const isOnline = (now - users[id].lastActive) < 15000;
                 const status = isOnline ? "Online 🟢" : `Last seen: ${users[id].lastSeen || '???'}`;
-                
                 const opt = document.createElement('option');
                 opt.value = id;
                 opt.innerText = `${id} (${status})`;
@@ -158,13 +162,15 @@
             stats.coins = (stats.coins || 0) + 10;
             document.getElementById('love-overlay').style.display = 'flex';
         }
-        updatePresence();
         db.ref('users/' + myId).set(stats);
     }
 
     function unlockAdmin() {
-        if(prompt("Enter Admin Key:") === "0710") {
-            document.getElementById('admin-controls').style.display = 'block';
+        const pin = prompt("Enter Admin Passkey:");
+        if(pin === "0710") {
+            document.getElementById('admin-controls').classList.add('visible');
+        } else {
+            alert("Wrong Key, Baby! ❤️");
         }
     }
 
@@ -181,6 +187,18 @@
     function adminUpdateGoal() {
         const val = parseInt(document.getElementById('admin-goal').value);
         if(adminTargetId) db.ref('users/' + adminTargetId).update({goal: val});
+    }
+
+    function adminAddReward() {
+        const reward = document.getElementById('admin-reward').value;
+        if(adminTargetId && reward) {
+            db.ref('users/' + adminTargetId + '/passbook').once('value', (snap) => {
+                let list = snap.val() || [];
+                list.unshift({ msg: `Surprise: ${reward}`, amt: 0, date: new Date().toLocaleDateString() });
+                db.ref('users/' + adminTargetId).update({passbook: list});
+                alert("Gifted " + reward + " to " + adminTargetId + "! 😘");
+            });
+        }
     }
 
     function updateUI() {
