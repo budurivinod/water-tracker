@@ -6,20 +6,17 @@
     <title>Our Love Hydration</title>
     
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3105/3105807.png">
-    <meta name="apple-mobile-web-app-title" content="Our Love Hydration">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root { --romance-pink: #ffafbd; --romance-red: #ff4b2b; --water-blue: #00d2ff; --gold: #f1c40f; }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to bottom, #ffafbd, #ffc3a0); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        :root { --romance-pink: #ffafbd; --romance-red: #ff4b2b; --water-blue: #00d2ff; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to bottom, #ffafbd, #ffc3a0); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .container { width: 100%; max-width: 420px; padding: 15px; padding-bottom: 90px; box-sizing: border-box; }
         .card { background: rgba(255, 255, 255, 0.95); border-radius: 25px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); margin-bottom: 15px; text-align: center; border: 2px solid white; }
-        .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; }
         .progress-box { position: relative; width: 160px; height: 160px; margin: 15px auto; }
         .circular-progress { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--water-blue) 0deg, #ffebee 0deg); transition: 0.5s ease; }
         .inner-circle { width: 130px; height: 130px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; }
@@ -27,84 +24,59 @@
         .tab-item { border: none; background: none; color: #999; font-size: 0.7rem; font-weight: bold; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .tab-item.active { color: var(--romance-red); }
         .page { display: none; width: 100%; }
-        .page.active { display: block; animation: fadeIn 0.4s; }
-        input { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
-        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
-        .entry { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .page.active { display: block; }
+        input, select { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
+        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 5px; width: 100%; }
+        .admin-section { display: none; background: #fff3f3; padding: 15px; border-radius: 15px; border: 2px dashed #ff7675; margin-top: 15px; }
         #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 2000; text-align: center; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center; z-index:9999; }
-        .admin-panel { border-top: 2px dashed #ff7675; margin-top: 10px; padding-top: 15px; }
     </style>
 </head>
 <body>
 
-<div id="loading">💝 Syncing Our Love...</div>
-
 <div id="love-overlay">
     <div style="font-size:100px; animation: heartbeat 0.8s infinite alternate;">❤️</div>
-    <h1 style="font-size: 3rem;">I Love You!</h1>
+    <h1>I Love You!</h1>
     <p>Target reached! 😘</p>
-    <button style="background: white; color: #ff4b2b; width: 200px; margin-top:20px;" onclick="document.getElementById('love-overlay').style.display='none'">I Love You Too ❤️</button>
+    <button style="background: white; color: #ff4b2b; width: 200px;" onclick="document.getElementById('love-overlay').style.display='none'">Love You Too ❤️</button>
 </div>
 
 <div class="container">
     <div id="p-home" class="page active">
         <div class="card">
-            <div class="header-stats">
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
                 <span>🎯 Target: <span id="display-goal">2000</span>ml</span>
-                <span style="color:#b8860b;">🪙 <span id="coin-count">0</span></span>
+                <span>🪙 <span id="coin-count">0</span></span>
             </div>
-            <div id="streak-hearts" style="font-size: 1.5rem; margin: 10px 0;"></div>
             <div class="progress-box">
                 <div id="progress" class="circular-progress">
-                    <div class="inner-circle">
-                        <span id="current-ml" style="font-size:1.8rem; font-weight:bold; color:#3498db;">0</span>
-                        <span style="color:#777; font-size:0.8rem;">ml total</span>
-                    </div>
+                    <div class="inner-circle"><span id="current-ml" style="font-size:1.8rem; font-weight:bold;">0</span></div>
                 </div>
             </div>
             <input type="number" id="drink-amount" value="250">
-            <button style="background: linear-gradient(to right, #00d2ff, #3a7bd5); width: 100%;" onclick="drinkWater()">Drink 💧</button>
-            <button style="background: #fab1a0; width: 100%; margin-top:10px; font-size:0.8rem;" onclick="resetToday()">Reset Today's Water 🔄</button>
-        </div>
-    </div>
-
-    <div id="p-rewards" class="page">
-        <div class="card">
-            <h3 style="color:#d63031; margin-top:0;">🎁 Reward Shop</h3>
-            <div class="entry"><span>Hug (🫂)</span><button style="background:#6c5ce7;" onclick="redeem(50, 'Hug 🫂')">50</button></div>
-            <div class="entry"><span>Kiss (😘)</span><button style="background:#6c5ce7;" onclick="redeem(100, 'Kiss 😘')">100</button></div>
-            <div class="entry"><span>Special Date (🕯️)</span><button style="background:#6c5ce7;" onclick="redeem(500, 'Date 🕯️')">500</button></div>
-        </div>
-    </div>
-
-    <div id="p-passbook" class="page">
-        <div class="card">
-            <h3 style="color:#d63031; margin-top:0;">📜 Our Love History</h3>
-            <div id="passbook-list" style="text-align:left; max-height:400px; overflow-y:auto;"></div>
-        </div>
-    </div>
-
-    <div id="p-stats" class="page">
-        <div class="card">
-            <h3 style="color:#d63031; margin-top:0;">📊 Progress</h3>
-            <canvas id="statChart" height="250"></canvas>
+            <button style="background: #00d2ff;" onclick="drinkWater()">Drink 💧</button>
+            <div style="font-size: 0.6rem; color: #999; margin-top: 10px;">ID: <span id="my-device-id"></span></div>
         </div>
     </div>
 
     <div id="p-request" class="page">
         <div class="card">
-            <h3 style="color:#d63031; margin-top:0;">💌 Request</h3>
-            <p>Ask Baby to change target:</p>
+            <h3>💌 Goal Request</h3>
             <input type="number" id="request-goal-input" placeholder="New Target ml">
-            <button style="background: #6c5ce7; width: 100%;" onclick="sendRequest()">Ask My Baby 💌</button>
+            <button style="background: #6c5ce7;" onclick="sendRequest()">Ask My Baby 💌</button>
             
-            <div class="admin-panel">
-                <h4 style="margin:5px 0;">🔒 Admin Controls</h4>
-                <input type="number" id="admin-coin-input" placeholder="New Coin Total">
-                <button style="background:#2ecc71; width:100%;" onclick="adminSetCoins()">Update Coins</button>
-                <input type="number" id="admin-goal-input" placeholder="New Daily Goal ml">
-                <button style="background:#e67e22; width:100%;" onclick="adminSetGoal()">Update Goal</button>
+            <button style="background: #ccc; margin-top: 20px; color: #333;" onclick="unlockAdmin()">Enter Admin Key 🔒</button>
+            
+            <div id="admin-controls" class="admin-section">
+                <h4>🔒 Live Admin Panel</h4>
+                <p style="font-size: 0.8rem;">Monitor & Manage Devices:</p>
+                <select id="admin-target-user" onchange="switchAdminTarget()"></select>
+
+                <div id="admin-actions" style="display:none; margin-top: 15px;">
+                    <input type="number" id="admin-coins" placeholder="Set Total Coins">
+                    <button style="background:#2ecc71;" onclick="adminUpdateCoins()">Update Coins</button>
+                    <input type="number" id="admin-goal" placeholder="Set Daily Goal">
+                    <button style="background:#e67e22;" onclick="adminUpdateGoal()">Set Goal</button>
+                </div>
             </div>
         </div>
     </div>
@@ -112,10 +84,7 @@
 
 <div class="tab-bar">
     <button class="tab-item active" onclick="showPage('home')">🏠<span>Home</span></button>
-    <button class="tab-item" onclick="showPage('rewards')">🎁<span>Shop</span></button>
-    <button class="tab-item" onclick="showPage('passbook')">📜<span>History</span></button>
-    <button class="tab-item" onclick="showPage('stats')">📊<span>Stats</span></button>
-    <button class="tab-item" onclick="showPage('request')">💌<span>Request</span></button>
+    <button class="tab-item" onclick="showPage('request')">💌<span>Admin</span></button>
 </div>
 
 <script>
@@ -131,165 +100,104 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let userId = localStorage.getItem('loveTrackerUserId') || 'user_main';
-    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0, lastCheck: "" };
-    let chart;
+    
+    let myId = localStorage.getItem('loveTrackerUserId') || 'Baby_' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    localStorage.setItem('loveTrackerUserId', myId);
+    document.getElementById('my-device-id').innerText = myId;
 
-    db.ref('users/' + userId).on('value', (snap) => {
-        if(snap.exists()) stats = snap.val();
-        document.getElementById('loading').style.display = 'none';
-        checkPenalty();
-        updateUI();
-        if(document.getElementById('p-stats').classList.contains('active')) renderChart();
+    // --- LIVE STATUS HEARTBEAT ---
+    function updatePresence() {
+        const now = Date.now();
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        db.ref('users/' + myId).update({ 
+            lastActive: now,
+            lastSeen: timeStr 
+        });
+    }
+    setInterval(updatePresence, 5000); // Heartbeat every 5 seconds
+    updatePresence();
+
+    let stats = { daily: {}, coins: 0, goal: 2000 };
+    let adminTargetId = "";
+
+    // --- POPULATE ADMIN LIST WITH LIVE INDICATOR ---
+    db.ref('users').on('value', (snap) => {
+        const select = document.getElementById('admin-target-user');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">-- Select Device --</option>';
+        const now = Date.now();
+        
+        if(snap.exists()) {
+            const users = snap.val();
+            Object.keys(users).forEach(id => {
+                const isOnline = (now - users[id].lastActive) < 15000; // Online if active in last 15s
+                const status = isOnline ? "Online 🟢" : `Last seen: ${users[id].lastSeen || '???'}`;
+                
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.innerText = `${id} (${status})`;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
     });
 
-    function checkPenalty() {
-        const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        if (stats.lastCheck === today) return;
-
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
-        const yIntake = stats.daily[yKey] || 0;
-
-        if (yIntake < stats.goal && yIntake > 0) {
-            const diff = stats.goal - yIntake;
-            const penalty = Math.floor(diff / 500) * 5;
-            if (penalty > 0) {
-                stats.coins = (stats.coins || 0) - penalty;
-                stats.streak = 0;
-                logPass(`Penalty: Missed Target (${yKey})`, -penalty);
-            }
-        }
-        stats.lastCheck = today;
-        db.ref('users/' + userId).set(stats);
-    }
+    db.ref('users/' + myId).on('value', (snap) => {
+        if(snap.exists()) stats = snap.val();
+        updateUI();
+    });
 
     function drinkWater() {
         const amt = parseInt(document.getElementById('drink-amount').value) || 0;
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
+        stats.daily = stats.daily || {};
         const old = stats.daily[today] || 0;
         stats.daily[today] = old + amt;
 
         if (stats.daily[today] >= stats.goal && old < stats.goal) {
             stats.coins = (stats.coins || 0) + 10;
-            stats.streak = (stats.streak || 0) + 1;
-            logPass("Target Reached! ❤️", 10);
-            if (stats.streak % 3 === 0) {
-                stats.coins += 10;
-                logPass("3-Day Streak Bonus! 🔥", 10);
-            }
             document.getElementById('love-overlay').style.display = 'flex';
         }
-        
-        if (stats.daily[today] > stats.goal) {
-            const oldUnits = Math.floor(Math.max(0, old - stats.goal) / 500);
-            const newUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
-            if (newUnits > oldUnits && newUnits > 0) {
-                const bonus = (newUnits - oldUnits) * 2;
-                stats.coins = (stats.coins || 0) + bonus;
-                logPass("Extra Bonus! 🌟", bonus);
-            }
-        }
-        db.ref('users/' + userId).set(stats);
+        updatePresence();
+        db.ref('users/' + myId).set(stats);
     }
 
-    function resetToday() {
-        if(confirm("Baby, reset today?")) {
-            const today = new Date().toLocaleDateString().replace(/\//g, '-');
-            const current = stats.daily[today] || 0;
-            if (current >= stats.goal) {
-                stats.coins = Math.max(0, stats.coins - 10);
-                stats.streak = Math.max(0, stats.streak - 1);
-                logPass("Reset: Goal Deducted 🔄", -10);
-                
-                const excess = Math.max(0, current - stats.goal);
-                const bonusUnits = Math.floor(excess / 500);
-                if(bonusUnits > 0) {
-                    const bonusToDeduct = bonusUnits * 2;
-                    stats.coins = Math.max(0, stats.coins - bonusToDeduct);
-                    logPass("Reset: Bonus Deducted 🔄", -bonusToDeduct);
-                }
-            }
-            stats.daily[today] = 0;
-            db.ref('users/' + userId).set(stats);
+    function unlockAdmin() {
+        if(prompt("Enter Admin Key:") === "0710") {
+            document.getElementById('admin-controls').style.display = 'block';
         }
     }
 
-    function logPass(msg, amt) {
-        if(!stats.passbook) stats.passbook = [];
-        stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
+    function switchAdminTarget() {
+        adminTargetId = document.getElementById('admin-target-user').value;
+        document.getElementById('admin-actions').style.display = adminTargetId ? 'block' : 'none';
+    }
+
+    function adminUpdateCoins() {
+        const val = parseInt(document.getElementById('admin-coins').value);
+        if(adminTargetId) db.ref('users/' + adminTargetId).update({coins: val});
+    }
+
+    function adminUpdateGoal() {
+        const val = parseInt(document.getElementById('admin-goal').value);
+        if(adminTargetId) db.ref('users/' + adminTargetId).update({goal: val});
     }
 
     function updateUI() {
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        const curr = stats.daily[today] || 0;
+        const curr = (stats.daily && stats.daily[today]) ? stats.daily[today] : 0;
         document.getElementById('current-ml').innerText = curr;
         document.getElementById('coin-count').innerText = stats.coins || 0;
-        document.getElementById('display-goal').innerText = stats.goal;
-        const p = Math.min((curr / stats.goal) * 360, 360);
+        document.getElementById('display-goal').innerText = stats.goal || 2000;
+        const p = Math.min((curr / (stats.goal || 2000)) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
-        
-        const hContainer = document.getElementById('streak-hearts');
-        hContainer.innerHTML = '';
-        const hearts = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
-        for(let i=0; i<hearts; i++) hContainer.innerHTML += '❤️ ';
-        
-        document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
-            <div class="entry">
-                <span>${p.msg}<br><small>${p.date}</small></span>
-                <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
-            </div>
-        `).join('') || '<p style="text-align:center;">No history</p>';
     }
 
     function showPage(p) {
         document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
         document.getElementById('p-' + p).classList.add('active');
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
         event.currentTarget.classList.add('active');
-        if(p === 'stats') renderChart();
-    }
-
-    function renderChart() {
-        const ctx = document.getElementById('statChart').getContext('2d');
-        if(chart) chart.destroy();
-        const dates = Object.keys(stats.daily || {}).sort().slice(-7);
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: dates, datasets: [{ label: 'ml', data: dates.map(d => stats.daily[d]), backgroundColor: '#ff4b2b' }] },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-    }
-
-    function adminSetCoins() {
-        const val = parseInt(document.getElementById('admin-coin-input').value);
-        if(!isNaN(val)) { stats.coins = val; db.ref('users/' + userId).set(stats); alert("Coins set!"); }
-    }
-
-    function adminSetGoal() {
-        const val = parseInt(document.getElementById('admin-goal-input').value);
-        if(!isNaN(val)) { stats.goal = val; db.ref('users/' + userId).set(stats); alert("Goal set!"); }
-    }
-
-    function redeem(cost, item) {
-        if(stats.coins >= cost) {
-            stats.coins -= cost;
-            logPass(`Redeemed: ${item}`, -cost);
-            db.ref('users/' + userId).set(stats);
-            alert("Baby, you redeemed " + item + "! 😘");
-        } else {
-            alert("Keep drinking water, Baby! ❤️");
-        }
-    }
-
-    function sendRequest() {
-        const val = document.getElementById('request-goal-input').value;
-        if(val > 0) {
-            stats.request = "Request: " + val + "ml";
-            db.ref('users/' + userId).update({ request: stats.request });
-            alert("Request sent to Baby! 😘");
-        }
     }
 </script>
 </body>
