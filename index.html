@@ -3,117 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hydration Quest</title>
+    <title>Our Love Hydration</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: #3498db;
-            --secondary: #f1c40f;
-            --bg: #f4f7f6;
-            --card: #ffffff;
+            --romance-pink: #ffafbd;
+            --romance-red: #ff4b2b;
+            --water-blue: #00d2ff;
+            --gold: #f1c40f;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; padding: 20px; box-sizing: border-box; }
-        .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(to bottom, #ffafbd, #ffc3a0);
+            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+        }
+        .container { width: 100%; max-width: 400px; }
+        .card { 
+            background: rgba(255, 255, 255, 0.9); border-radius: 25px; 
+            padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
+            margin-bottom: 15px; text-align: center; border: 2px solid white;
+        }
         
-        /* Stats & Wallet */
-        .wallet { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .coins { color: var(--secondary); font-weight: bold; font-size: 1.2rem; }
+        .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; }
+        .coin-balance { color: var(--gold); font-size: 1.2rem; text-shadow: 1px 1px #000; }
 
-        /* Progress Circle */
-        .progress-box { position: relative; width: 150px; height: 150px; margin: 20px auto; }
-        .circular-progress { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--primary) 0deg, #ddd 0deg); transition: 0.3s; }
-        .inner-circle { width: 120px; height: 120px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
-        /* Controls */
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; }
-        .btn-reset { background: #e74c3c; color: white; }
-        input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 80%; margin-bottom: 10px; }
+        /* Romantic Progress Ring */
+        .progress-box { position: relative; width: 160px; height: 160px; margin: 15px auto; }
+        .circular-progress { 
+            width: 100%; height: 100%; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; 
+            background: conic-gradient(var(--water-blue) 0deg, #ffebee 0deg);
+            transition: 0.5s ease-in-out;
+        }
+        .inner-circle { width: 130px; height: 130px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; }
 
-        .tabs { display: flex; justify-content: space-around; margin-top: 20px; }
-        .tab-btn { background: none; color: #777; border-bottom: 2px solid transparent; border-radius: 0; }
-        .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        canvas { max-width: 100%; margin-top: 20px; }
+        /* Buttons & Inputs */
+        input { width: 70%; padding: 10px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; outline: none; }
+        button { 
+            padding: 12px 20px; border: none; border-radius: 20px; 
+            color: white; font-weight: bold; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); width: 100%; }
+        .btn-tab { background: #ff7675; margin: 5px; flex: 1; }
+        .btn-tab.active { background: #d63031; }
+        .btn-redeem { background: #6c5ce7; font-size: 0.8rem; padding: 5px 10px; }
+
+        /* Animation Overlay */
+        #love-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 75, 43, 0.9); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; z-index: 1000; animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .heart-anim { font-size: 80px; animation: beat 0.8s infinite alternate; }
+        @keyframes beat { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+        /* Rewards Table */
+        .reward-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
+<div id="love-overlay" onclick="this.style.display='none'">
+    <div class="heart-anim">❤️</div>
+    <h1>I Love You!</h1>
+    <p>You earned 10 Love Coins! 💖</p>
+    <button onclick="this.parentElement.style.display='none'">Continue My Love</button>
+</div>
+
 <div class="container">
     <div class="card">
-        <div class="wallet">
-            <span>💧 Goal: <span id="display-goal">2000</span>ml</span>
-            <span class="coins">💰 <span id="coin-count">0</span> Coins</span>
+        <div class="header-stats">
+            <span>🎯 Goal: <span id="display-goal">2000</span>ml</span>
+            <span class="coin-balance">🪙 <span id="coin-count">0</span> Love Coins</span>
         </div>
         
         <div class="progress-box">
             <div id="progress" class="circular-progress">
                 <div class="inner-circle">
-                    <span id="current-ml" style="font-size: 1.5rem; font-weight: bold;">0</span>
-                    <span style="font-size: 0.8rem; color: #777;">ml</span>
+                    <span id="current-ml" style="font-size: 1.8rem; font-weight: bold; color: #3498db;">0</span>
+                    <span style="color: #777;">ml total</span>
                 </div>
             </div>
         </div>
 
-        <input type="number" id="drink-amount" placeholder="Amount in ml (e.g. 250)">
-        <div class="controls">
-            <button class="btn-add" onclick="drinkWater()">Drink 💧</button>
-            <button class="btn-reset" onclick="resetToday()">Reset</button>
+        <input type="number" id="drink-amount" placeholder="Amount (ml) e.g. 250">
+        <button class="btn-drink" onclick="drinkWater()">Drink Water 💧</button>
+    </div>
+
+    <div class="card">
+        <h3>❤️ Love Rewards</h3>
+        <div class="reward-item">
+            <span>Hug (🫂)</span>
+            <button class="btn-redeem" onclick="redeem(50, 'Hug')">50 Coins</button>
+        </div>
+        <div class="reward-item">
+            <span>Kiss (😘)</span>
+            <button class="btn-redeem" onclick="redeem(100, 'Kiss')">100 Coins</button>
+        </div>
+        <div class="reward-item">
+            <span>Surprise Date (🕯️)</span>
+            <button class="btn-redeem" onclick="redeem(500, 'Date')">500 Coins</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>Settings</h3>
-        <input type="number" id="set-goal" placeholder="Set Daily Goal (ml)">
-        <button class="btn-add" onclick="updateGoal()">Set New Goal</button>
+        <div style="display: flex;">
+            <button class="btn-tab active" id="btn-daily" onclick="switchChart('daily')">Daily</button>
+            <button class="btn-tab" id="btn-weekly" onclick="switchChart('weekly')">Weekly</button>
+        </div>
+        <canvas id="waterChart" style="margin-top: 15px;"></canvas>
     </div>
 
-    <div class="card">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="updateChart('daily')">Daily</button>
-            <button class="tab-btn" onclick="updateChart('weekly')">Weekly</button>
-        </div>
-        <canvas id="waterChart"></canvas>
+    <div class="card" style="font-size: 0.8rem; opacity: 0.8;">
+        Settings: Daily Goal (ml) <input type="number" id="set-goal" style="width: 50%;"> 
+        <button style="background: #fab1a0;" onclick="updateGoal()">Save</button>
     </div>
 </div>
 
 <script>
-    let stats = JSON.parse(localStorage.getItem('waterStats')) || { daily: {}, coins: 0, goal: 2000 };
+    let stats = JSON.parse(localStorage.getItem('loveWaterStats')) || { 
+        daily: {}, 
+        coins: 0, 
+        goal: 2000,
+        redeemed: [] 
+    };
     let chart;
+    let currentView = 'daily';
 
     function init() {
         document.getElementById('display-goal').innerText = stats.goal;
-        document.getElementById('coin-count').innerText = stats.coins;
         updateUI();
         renderChart();
     }
 
     function updateGoal() {
-        const newGoal = document.getElementById('set-goal').value;
-        if (newGoal > 0) {
-            stats.goal = parseInt(newGoal);
-            save();
-            document.getElementById('display-goal').innerText = stats.goal;
-            updateUI();
+        const val = document.getElementById('set-goal').value;
+        if(val > 0) {
+            stats.goal = parseInt(val);
+            saveAndRefresh();
         }
     }
 
     function drinkWater() {
         const amount = parseInt(document.getElementById('drink-amount').value) || 250;
         const today = new Date().toISOString().split('T')[0];
+        const oldVal = stats.daily[today] || 0;
         
-        stats.daily[today] = (stats.daily[today] || 0) + amount;
+        stats.daily[today] = oldVal + amount;
         
-        // Reward logic: If they just crossed the goal
-        if (stats.daily[today] >= stats.goal && (stats.daily[today] - amount) < stats.goal) {
+        // Success Animation Logic
+        if (stats.daily[today] >= stats.goal && oldVal < stats.goal) {
             stats.coins += 10;
-            alert("Goal Reached! 🏆 You earned 10 coins!");
+            document.getElementById('love-overlay').style.display = 'flex';
         }
 
-        save();
-        updateUI();
-        updateChart('daily');
+        saveAndRefresh();
+    }
+
+    function redeem(cost, item) {
+        if(stats.coins >= cost) {
+            stats.coins -= cost;
+            alert(`Yay! You redeemed a ${item}! Save it for when you see him next! 😘`);
+            saveAndRefresh();
+        } else {
+            alert("Not enough Love Coins yet! Keep drinking water, baby! ❤️");
+        }
+    }
+
+    function switchChart(type) {
+        currentView = type;
+        document.getElementById('btn-daily').classList.toggle('active', type === 'daily');
+        document.getElementById('btn-weekly').classList.toggle('active', type === 'weekly');
+        updateChartData();
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('waterChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Water (ml)', data: [], backgroundColor: '#3498db', borderRadius: 10 }] },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        updateChartData();
+    }
+
+    function updateChartData() {
+        const dates = Object.keys(stats.daily).sort();
+        const displayDates = currentView === 'daily' ? dates.slice(-1) : dates.slice(-7);
+        
+        chart.data.labels = displayDates.map(d => d.split('-').slice(1).join('/'));
+        chart.data.datasets[0].data = displayDates.map(d => stats.daily[d]);
+        chart.update();
     }
 
     function updateUI() {
@@ -121,39 +205,16 @@
         const current = stats.daily[today] || 0;
         document.getElementById('current-ml').innerText = current;
         document.getElementById('coin-count').innerText = stats.coins;
+        document.getElementById('display-goal').innerText = stats.goal;
 
         const percent = Math.min((current / stats.goal) * 360, 360);
-        document.getElementById('progress').style.background = `conic-gradient(#3498db ${percent}deg, #ddd 0deg)`;
+        document.getElementById('progress').style.background = `conic-gradient(var(--water-blue) ${percent}deg, #ffebee 0deg)`;
     }
 
-    function save() {
-        localStorage.setItem('waterStats', JSON.stringify(stats));
-    }
-
-    function renderChart() {
-        const ctx = document.getElementById('waterChart').getContext('2d');
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Water Intake (ml)', data: [], backgroundColor: '#3498db' }] },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
-        updateChart('daily');
-    }
-
-    function updateChart(view) {
-        const days = Object.keys(stats.daily).slice(-7);
-        chart.data.labels = days;
-        chart.data.datasets[0].data = days.map(d => stats.daily[d]);
-        chart.update();
-    }
-
-    function resetToday() {
-        if(confirm("Start fresh for today?")) {
-            const today = new Date().toISOString().split('T')[0];
-            stats.daily[today] = 0;
-            save();
-            updateUI();
-        }
+    function saveAndRefresh() {
+        localStorage.setItem('loveWaterStats', JSON.stringify(stats));
+        updateUI();
+        updateChartData();
     }
 
     init();
