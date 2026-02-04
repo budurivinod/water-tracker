@@ -14,36 +14,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --romance-pink: #ffafbd; --romance-red: #ff4b2b; --water-blue: #00d2ff; --gold: #f1c40f; }
+        :root { --romance-pink: #ffafbd; --romance-red: #ff4b2b; --water-blue: #00d2ff; --gold: #f1c40f; --penalty: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to bottom, #ffafbd, #ffc3a0); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .container { width: 100%; max-width: 400px; padding-bottom: 60px; }
         .card { background: rgba(255, 255, 255, 0.95); border-radius: 25px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); margin-bottom: 15px; text-align: center; border: 2px solid white; }
-        
-        /* Stats & Streak Bar */
-        .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; margin-bottom: 10px; }
-        .streak-bar { display: flex; justify-content: center; gap: 5px; margin: 10px 0; font-size: 1.2rem; }
-        .heart-streak { animation: pulse 1.5s infinite; display: inline-block; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-
-        /* Progress Circle */
+        .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; }
+        .streak-display { font-size: 1.5rem; margin: 10px 0; display: flex; justify-content: center; gap: 8px; }
+        .heart-streak { animation: heartbeat 1.2s infinite; display: inline-block; }
+        @keyframes heartbeat { 0% { transform: scale(1); } 20% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .progress-box { position: relative; width: 160px; height: 160px; margin: 15px auto; }
         .circular-progress { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--water-blue) 0deg, #ffebee 0deg); transition: 0.5s ease; }
         .inner-circle { width: 130px; height: 130px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; }
-
-        /* Controls */
         input { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; outline: none; }
-        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
         .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); font-size: 1.1rem; }
-        .btn-redeem { background: #6c5ce7; font-size: 0.8rem; width: 80px; padding: 8px; }
-
-        /* History & Lists */
         .entry { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .list-container { text-align: left; max-height: 200px; overflow-y: auto; }
-
-        /* I Love You Overlay */
         #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 1000; text-align: center; }
-        .big-heart { font-size: 100px; animation: beat 0.8s infinite alternate; }
-        @keyframes beat { from { transform: scale(1); } to { transform: scale(1.3); } }
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center; z-index:9999; }
     </style>
 </head>
@@ -52,10 +38,10 @@
 <div id="loading">💝 Loading Our Love...</div>
 
 <div id="love-overlay">
-    <div class="big-heart">❤️</div>
+    <div style="font-size:100px; animation: heartbeat 0.8s infinite alternate;">❤️</div>
     <h1 style="font-size: 3rem;">I Love You!</h1>
-    <p>Target reached! You're my healthy queen. 😘</p>
-    <button style="background: white; color: #ff4b2b; width: 150px;" onclick="document.getElementById('love-overlay').style.display='none'">Love You Too ❤️</button>
+    <p id="overlay-msg">Target reached! +10 Coins 🪙</p>
+    <button style="background: white; color: #ff4b2b; width: 150px; margin-top:20px;" onclick="document.getElementById('love-overlay').style.display='none'">My Love ❤️</button>
 </div>
 
 <div class="container">
@@ -65,8 +51,7 @@
             <span style="color:#b8860b;">🪙 <span id="coin-count">0</span> Coins</span>
         </div>
         
-        <div class="streak-bar" id="streak-bar">
-            </div>
+        <div class="streak-display" id="streak-hearts"></div>
 
         <div class="progress-box">
             <div id="progress" class="circular-progress">
@@ -82,21 +67,14 @@
     </div>
 
     <div class="card">
-        <h3 style="color:#d63031; margin-top:0;">🎁 Reward Shop</h3>
-        <div class="entry"><span>Hug (🫂)</span><button class="btn-redeem" onclick="redeem(50, 'Hug 🫂')">50</button></div>
-        <div class="entry"><span>Kiss (😘)</span><button class="btn-redeem" onclick="redeem(100, 'Kiss 😘')">100</button></div>
-        <div class="entry"><span>Special Date (🕯️)</span><button class="btn-redeem" onclick="redeem(500, 'Date 🕯️')">500</button></div>
+        <h3 style="color:#d63031; margin-top:0;">📜 Our Passbook</h3>
+        <div id="passbook-list" style="text-align:left; max-height:200px; overflow-y:auto;"></div>
     </div>
 
     <div class="card">
-        <h3 style="color:#d63031; margin-top:0;">📜 Transaction History</h3>
-        <div id="passbook-list" class="list-container"></div>
-    </div>
-
-    <div class="card">
-        <h3 style="color:#d63031; margin-top:0;">⚙️ Goal Settings</h3>
-        <input type="number" id="request-goal-input" placeholder="Request new target ml">
-        <button style="background: #6c5ce7;" onclick="sendRequest()">Send Goal Request 💌</button>
+        <h3 style="color:#d63031; margin-top:0;">🎁 Goal Request</h3>
+        <input type="number" id="request-goal-input" placeholder="New Target ml">
+        <button style="background: #6c5ce7;" onclick="sendRequest()">Ask your baby to Change Goal 💌</button>
     </div>
 </div>
 
@@ -113,144 +91,114 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    
-    // Default data structure to prevent errors
-    let stats = { 
-        daily: {}, 
-        coins: 0, 
-        goal: 2000, 
-        passbook: [], 
-        history: [], 
-        streak: 0,
-        lastPenaltyCheck: ""
-    };
+    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0, lastCheck: "" };
 
-    // Sync with Database
     db.ref('love_data').on('value', (snap) => {
-        if(snap.exists()) {
-            const data = snap.val();
-            // Ensure arrays exist so they don't break the UI
-            stats = {
-                ...data,
-                passbook: data.passbook || [],
-                history: data.history || [],
-                daily: data.daily || {}
-            };
-        }
+        if(snap.exists()) stats = snap.val();
         document.getElementById('loading').style.display = 'none';
+        checkPenalty();
         updateUI();
     });
 
+    function checkPenalty() {
+        const today = new Date().toLocaleDateString().replace(/\//g, '-');
+        if (stats.lastCheck === today) return;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
+        const yIntake = stats.daily[yKey] || 0;
+
+        if (yIntake < stats.goal && yIntake > 0) {
+            const diff = stats.goal - yIntake;
+            const penalty = Math.floor(diff / 500) * 5;
+            if (penalty > 0) {
+                stats.coins -= penalty;
+                stats.streak = 0; // Reset streak
+                logPass(`Penalty: Missed Target (${yKey})`, -penalty);
+            }
+        }
+        stats.lastCheck = today;
+        db.ref('love_data').set(stats);
+    }
+
     function drinkWater() {
         const amt = parseInt(document.getElementById('drink-amount').value) || 0;
-        if(amt <= 0) return;
-
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
-        const oldVal = stats.daily[today] || 0;
-        stats.daily[today] = oldVal + amt;
+        const old = stats.daily[today] || 0;
+        stats.daily[today] = old + amt;
 
-        // Check if goal reached just now
-        if (stats.daily[today] >= stats.goal && oldVal < stats.goal) {
+        // Daily Goal Logic
+        if (stats.daily[today] >= stats.goal && old < stats.goal) {
             stats.coins += 10;
             stats.streak = (stats.streak || 0) + 1;
-            logTransaction("Reached Daily Goal! ❤️", 10);
+            logPass("Target Reached! ❤️", 10);
             
             // Streak Bonus
             if (stats.streak % 3 === 0) {
-                stats.coins += 5;
-                logTransaction("3-Day Streak Bonus! 🔥", 5);
+                stats.coins += 10;
+                logPass("3-Day Streak Bonus! 🔥", 10);
             }
-            
-            document.getElementById('love-overlay').style.display = 'flex';
+            showOverlay("I Love You! Target Reached! ❤️");
         }
         
-        saveData();
+        // Extra Bonus Logic (2 coins per 500ml after target)
+        if (stats.daily[today] > stats.goal) {
+            const oldBonusUnits = Math.floor((old - stats.goal) / 500);
+            const newBonusUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
+            if (newBonusUnits > oldBonusUnits && newBonusUnits > 0) {
+                const bonus = (newBonusUnits - Math.max(0, oldBonusUnits)) * 2;
+                stats.coins += bonus;
+                logPass("Extra Hydration Bonus! 🌟", bonus);
+            }
+        }
+
+        db.ref('love_data').set(stats);
     }
 
-    function redeem(cost, item) {
-        if(stats.coins >= cost) {
-            stats.coins -= cost;
-            stats.history.unshift({ item, date: new Date().toLocaleDateString() });
-            logTransaction(`Redeemed ${item}`, -cost);
-            saveData();
-            alert(`Yay! You redeemed a ${item}! ❤️`);
-        } else {
-            alert("Not enough coins yet, my love! ❤️");
-        }
+    function showOverlay(txt) {
+        document.getElementById('overlay-msg').innerText = txt;
+        document.getElementById('love-overlay').style.display = 'flex';
+    }
+
+    function logPass(msg, amt) {
+        if(!stats.passbook) stats.passbook = [];
+        stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
     }
 
     function sendRequest() {
         const val = document.getElementById('request-goal-input').value;
         if(val > 0) {
-            stats.request = "Request: " + val + "ml";
-            saveData();
-            alert("Goal request sent to Buduri! 💌");
+            stats.request = "Request for " + val + "ml";
+            db.ref('love_data').set(stats);
+            alert("Request sent to your baby! 😘");
         }
-    }
-
-    function logTransaction(msg, amt) {
-        stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
-    }
-
-    function saveData() {
-        db.ref('love_data').set(stats);
     }
 
     function updateUI() {
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
         const curr = stats.daily[today] || 0;
-        
-        // Update Labels
         document.getElementById('current-ml').innerText = curr;
         document.getElementById('coin-count').innerText = stats.coins;
         document.getElementById('display-goal').innerText = stats.goal;
         
-        // Update Progress Circle
         const p = Math.min((curr / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
         
-        // Update Streak Hearts
-        const streakContainer = document.getElementById('streak-bar');
-        streakContainer.innerHTML = '';
-        const streakCount = stats.streak || 0;
-        for(let i=0; i < (streakCount % 3 || (streakCount > 0 ? 3 : 0)); i++) {
-            streakContainer.innerHTML += '<span class="heart-streak">❤️</span>';
-        }
-        if(streakCount === 0) streakContainer.innerHTML = '<span>No active streak 🧊</span>';
+        // Streak Hearts
+        const heartContainer = document.getElementById('streak-hearts');
+        heartContainer.innerHTML = '';
+        const heartsToShow = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
+        for(let i=0; i<heartsToShow; i++) heartContainer.innerHTML += '<span class="heart-streak">❤️</span>';
+        if(stats.streak === 0) heartContainer.innerHTML = '<small style="color:#999">Start your streak today!</small>';
 
-        // Update Passbook
-        const passList = document.getElementById('passbook-list');
-        passList.innerHTML = stats.passbook.map(p => `
+        document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
             <div class="entry">
                 <span>${p.msg}</span>
                 <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
             </div>
-        `).join('') || '<p style="text-align:center; color:#999;">No history yet</p>';
+        `).join('') || '<p style="text-align:center;color:#999;">No history yet</p>';
     }
-
-    // Automatically check yesterday's penalty once a day
-    setInterval(() => {
-        const todayKey = new Date().toLocaleDateString().replace(/\//g, '-');
-        if (stats.lastPenaltyCheck !== todayKey) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
-            const yIntake = stats.daily[yKey] || 0;
-            
-            if (yIntake < stats.goal && yIntake > 0) {
-                const diff = stats.goal - yIntake;
-                const penalty = Math.floor(diff / 500) * 5;
-                if (penalty > 0) {
-                    stats.coins -= penalty;
-                    stats.streak = 0;
-                    logTransaction(`Penalty: Missed Target (${yKey})`, -penalty);
-                }
-            }
-            stats.lastPenaltyCheck = todayKey;
-            saveData();
-        }
-    }, 60000); 
-
 </script>
 </body>
 </html>
