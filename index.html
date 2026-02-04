@@ -28,14 +28,11 @@
         .tab-item.active { color: var(--romance-red); }
         .page { display: none; width: 100%; }
         .page.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         input { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
         button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
         .entry { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
         #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 2000; text-align: center; }
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center; z-index:9999; }
-        .admin-secret { opacity: 0.05; font-size: 0.5rem; margin-top: 20px; cursor: pointer; }
-        .admin-panel { display: none; border-top: 2px dashed #ff7675; margin-top: 20px; padding-top: 20px; }
     </style>
 </head>
 <body>
@@ -45,8 +42,8 @@
 <div id="love-overlay">
     <div style="font-size:100px; animation: heartbeat 0.8s infinite alternate;">❤️</div>
     <h1 style="font-size: 3rem;">I Love You!</h1>
-    <p id="overlay-msg">You hit your target, my beautiful baby! 😘</p>
-    <button style="background: white; color: #ff4b2b; width: 200px; margin-top:20px;" onclick="document.getElementById('love-overlay').style.display='none'">Love You Too ❤️</button>
+    <p>Target reached! 😘</p>
+    <button style="background: white; color: #ff4b2b; width: 200px; margin-top:20px;" onclick="document.getElementById('love-overlay').style.display='none'">I Love You Too ❤️</button>
 </div>
 
 <div class="container">
@@ -76,7 +73,6 @@
             <h3 style="color:#d63031; margin-top:0;">🎁 Reward Shop</h3>
             <div class="entry"><span>Hug (🫂)</span><button style="background:#6c5ce7;" onclick="redeem(50, 'Hug 🫂')">50</button></div>
             <div class="entry"><span>Kiss (😘)</span><button style="background:#6c5ce7;" onclick="redeem(100, 'Kiss 😘')">100</button></div>
-            <div class="entry"><span>Movie Night (🍿)</span><button style="background:#6c5ce7;" onclick="redeem(300, 'Movie Night 🍿')">300</button></div>
             <div class="entry"><span>Special Date (🕯️)</span><button style="background:#6c5ce7;" onclick="redeem(500, 'Date 🕯️')">500</button></div>
         </div>
     </div>
@@ -98,18 +94,9 @@
     <div id="p-request" class="page">
         <div class="card">
             <h3 style="color:#d63031; margin-top:0;">💌 Request</h3>
-            <p style="font-size:0.8rem; color:#777;">Need to change the target? Ask your Baby!</p>
+            <p>Ask Baby to change target:</p>
             <input type="number" id="request-goal-input" placeholder="New Target ml">
             <button style="background: #6c5ce7; width: 100%;" onclick="sendRequest()">Ask My Baby 💌</button>
-            
-            <div class="admin-secret" onclick="toggleAdmin()">Admin Access</div>
-            <div id="admin-panel" class="admin-panel">
-                <h4>🔒 Admin Controls</h4>
-                <input type="number" id="admin-coin-input" placeholder="Set Coins">
-                <button style="background:#2ecc71; width:100%; margin-bottom:10px;" onclick="adminSetCoins()">Update Coins</button>
-                <input type="number" id="admin-goal-input" placeholder="Set Goal">
-                <button style="background:#e67e22; width:100%;" onclick="adminSetGoal()">Update Goal</button>
-            </div>
         </div>
     </div>
 </div>
@@ -135,21 +122,38 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    let userId = localStorage.getItem('loveTrackerUserId');
-    if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('loveTrackerUserId', userId);
-    }
-
-    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0 };
+    let userId = localStorage.getItem('loveTrackerUserId') || 'user_main';
+    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], streak: 0, lastCheck: "" };
     let chart;
 
     db.ref('users/' + userId).on('value', (snap) => {
         if(snap.exists()) stats = snap.val();
         document.getElementById('loading').style.display = 'none';
+        checkPenalty();
         updateUI();
     });
+
+    function checkPenalty() {
+        const today = new Date().toLocaleDateString().replace(/\//g, '-');
+        if (stats.lastCheck === today) return;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
+        const yIntake = stats.daily[yKey] || 0;
+
+        if (yIntake < stats.goal && yIntake > 0) {
+            const diff = stats.goal - yIntake;
+            const penalty = Math.floor(diff / 500) * 5;
+            if (penalty > 0) {
+                stats.coins -= penalty;
+                stats.streak = 0;
+                logPass(`Penalty: Missed Target (${yKey})`, -penalty);
+            }
+        }
+        stats.lastCheck = today;
+        db.ref('users/' + userId).set(stats);
+    }
 
     function drinkWater() {
         const amt = parseInt(document.getElementById('drink-amount').value) || 0;
@@ -157,62 +161,43 @@
         const old = stats.daily[today] || 0;
         stats.daily[today] = old + amt;
 
+        // Daily Goal + Streak
         if (stats.daily[today] >= stats.goal && old < stats.goal) {
             stats.coins += 10;
-            logPass("Goal Reached! ❤️", 10);
+            stats.streak = (stats.streak || 0) + 1;
+            logPass("Target Reached! ❤️", 10);
+            if (stats.streak % 3 === 0) {
+                stats.coins += 10;
+                logPass("3-Day Streak Bonus! 🔥", 10);
+            }
             document.getElementById('love-overlay').style.display = 'flex';
+        }
+        
+        // Bonus (2 coins per 500ml extra)
+        if (stats.daily[today] > stats.goal) {
+            const oldUnits = Math.floor((old - stats.goal) / 500);
+            const newUnits = Math.floor((stats.daily[today] - stats.goal) / 500);
+            if (newUnits > oldUnits && newUnits > 0) {
+                const bonus = (newUnits - Math.max(0, oldUnits)) * 2;
+                stats.coins += bonus;
+                logPass("Extra Bonus! 🌟", bonus);
+            }
         }
         db.ref('users/' + userId).set(stats);
     }
 
     function resetToday() {
-        if(confirm("Baby, do you really want to reset today's progress?")) {
+        if(confirm("Baby, reset today?")) {
             const today = new Date().toLocaleDateString().replace(/\//g, '-');
             const current = stats.daily[today] || 0;
             if (current >= stats.goal) {
                 stats.coins = Math.max(0, stats.coins - 10);
+                stats.streak = Math.max(0, stats.streak - 1);
                 logPass("Reset: Goal Deducted 🔄", -10);
             }
             stats.daily[today] = 0;
             db.ref('users/' + userId).set(stats);
         }
-    }
-
-    function redeem(cost, item) {
-        if(stats.coins >= cost) {
-            stats.coins -= cost;
-            logPass(`Redeemed: ${item}`, -cost);
-            db.ref('users/' + userId).set(stats);
-            alert("Baby, you redeemed " + item + "! Show this to your love. 😘");
-        } else {
-            alert("Keep drinking water, Baby! You need more coins. ❤️");
-        }
-    }
-
-    function sendRequest() {
-        const val = document.getElementById('request-goal-input').value;
-        if(val > 0) {
-            stats.request = "Request for " + val + "ml";
-            db.ref('users/' + userId).set(stats);
-            alert("Request sent to Baby! 😘");
-        }
-    }
-
-    function toggleAdmin() {
-        const pin = prompt("Admin PIN:");
-        if(pin === "0710") {
-            document.getElementById('admin-panel').style.display = 'block';
-        }
-    }
-
-    function adminSetCoins() {
-        const val = parseInt(document.getElementById('admin-coin-input').value);
-        if(!isNaN(val)) { stats.coins = val; db.ref('users/' + userId).set(stats); alert("Coins updated!"); }
-    }
-
-    function adminSetGoal() {
-        const val = parseInt(document.getElementById('admin-goal-input').value);
-        if(!isNaN(val)) { stats.goal = val; db.ref('users/' + userId).set(stats); alert("Goal updated!"); }
     }
 
     function logPass(msg, amt) {
@@ -229,12 +214,17 @@
         const p = Math.min((curr / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
         
+        const hContainer = document.getElementById('streak-hearts');
+        hContainer.innerHTML = '';
+        const hearts = stats.streak % 3 || (stats.streak > 0 ? 3 : 0);
+        for(let i=0; i<hearts; i++) hContainer.innerHTML += '❤️ ';
+        
         document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
             <div class="entry">
-                <span>${p.msg}<br><small style="color:#999">${p.date}</small></span>
+                <span>${p.msg}<br><small>${p.date}</small></span>
                 <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
             </div>
-        `).join('') || '<p style="text-align:center;color:#999;">No history yet</p>';
+        `).join('') || '<p style="text-align:center;">No history</p>';
     }
 
     function showPage(p) {
@@ -242,18 +232,6 @@
         document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
         document.getElementById('p-' + p).classList.add('active');
         event.currentTarget.classList.add('active');
-        if(p === 'stats') renderChart();
-    }
-
-    function renderChart() {
-        const ctx = document.getElementById('statChart').getContext('2d');
-        if(chart) chart.destroy();
-        const dates = Object.keys(stats.daily).sort().slice(-7);
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: dates, datasets: [{ label: 'ml', data: dates.map(d => stats.daily[d]), backgroundColor: '#ff4b2b' }] },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
     }
 </script>
 </body>
