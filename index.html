@@ -91,7 +91,7 @@
             </div>
         </div>
         <input type="number" id="drink-amount" value="250">
-        <div style="display: flex; width: 90%; margin: 0 auto;">
+        <div style="display: flex; width: 95%; margin: 0 auto;">
             <button class="btn-drink" onclick="drinkWater()">Drink Water 💧</button>
             <button class="btn-reset-day" onclick="resetTodayIntake()">Reset 🔄</button>
         </div>
@@ -99,9 +99,9 @@
 
     <div class="card">
         <h3 style="color: #d63031; margin: 0 0 10px 0;">🎁 Redeem Rewards</h3>
-        <div class="reward-item"><span>Make a Wish (✨)</span><button class="btn-redeem" onclick="redeem(30, 'Wish ✨')">30 Coins</button></div>
         <div class="reward-item"><span>Hug (🫂)</span><button class="btn-redeem" onclick="redeem(50, 'Hug 🫂')">50 Coins</button></div>
         <div class="reward-item"><span>Kiss (😘)</span><button class="btn-redeem" onclick="redeem(100, 'Kiss 😘')">100 Coins</button></div>
+        <div class="reward-item"><span>Special Date (🕯️)</span><button class="btn-redeem" onclick="redeem(500, 'Special Date 🕯️')">500 Coins</button></div>
     </div>
 
     <div class="card">
@@ -149,7 +149,7 @@
     }
 
     function resetTodayIntake() {
-        if(confirm("Baby, do you want to reset your water intake for today? (Your coins will stay safe!)")) {
+        if(confirm("Do you want to reset your water for today?")) {
             const today = new Date().toLocaleDateString();
             stats.daily[today] = 0;
             saveAndRefresh();
@@ -164,12 +164,12 @@
             stats.history.unshift({ item: item, date: new Date().toLocaleDateString() });
             saveAndRefresh();
         } else {
-            alert("Keep drinking! You need more coins for this reward. ❤️");
+            alert("Keep drinking baby! You need more coins. ❤️");
         }
     }
 
     function clearHistory() {
-        if(confirm("Did you receive all your hugs and kisses? 🥰")) {
+        if(confirm("Did you receive these in person? 🥰")) {
             stats.history = [];
             saveAndRefresh();
         }
@@ -179,7 +179,7 @@
         const container = document.getElementById('history-container');
         const clearBtn = document.getElementById('clear-btn');
         if (stats.history.length === 0) {
-            container.innerHTML = '<p style="color:#999; text-align:center;">No rewards redeemed yet...</p>';
+            container.innerHTML = '<p style="color:#999; text-align:center;">No rewards yet...</p>';
             clearBtn.style.display = 'none';
             return;
         }
