@@ -12,102 +12,67 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root {
-            --romance-pink: #ffafbd;
-            --romance-red: #ff4b2b;
-            --water-blue: #00d2ff;
-            --gold: #f1c40f;
-            --penalty: #e74c3c;
-        }
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: linear-gradient(to bottom, #ffafbd, #ffc3a0);
-            margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
-        }
-        .container { width: 100%; max-width: 400px; padding-bottom: 60px; }
-        .card { 
-            background: rgba(255, 255, 255, 0.95); border-radius: 25px; 
-            padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
-            margin-bottom: 15px; text-align: center; border: 2px solid white;
-        }
-        .main-tabs { display: flex; background: white; border-radius: 15px; margin-bottom: 15px; overflow: hidden; }
-        .main-tabs button { flex: 1; padding: 12px; border: none; background: none; font-weight: bold; color: #777; cursor: pointer; }
-        .main-tabs button.active { background: var(--romance-red); color: white; }
+        :root { --romance-pink: #ffafbd; --romance-red: #ff4b2b; --water-blue: #00d2ff; --penalty: #e74c3c; --streak: #f39c12; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(to bottom, #ffafbd, #ffc3a0); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 400px; padding-bottom: 40px; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 25px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); margin-bottom: 15px; text-align: center; border: 2px solid white; }
+        .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; }
         .progress-box { position: relative; width: 160px; height: 160px; margin: 15px auto; }
         .circular-progress { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--water-blue) 0deg, #ffebee 0deg); transition: 0.5s ease; }
         .inner-circle { width: 130px; height: 130px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; }
-        input { width: 80%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
-        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
-        .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); flex: 2; }
-        .btn-reset { background: #fab1a0; flex: 1; font-size: 0.8rem; margin-left: 10px; }
-        .entry { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-        .page { display: none; }
-        .page.active { display: block; }
+        input { width: 85%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; outline: none; }
+        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; }
+        .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); }
+        .btn-request { background: #6c5ce7; margin-top: 10px; }
+        .entry { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .streak-text { color: var(--streak); font-weight: bold; }
+        
+        #love-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 1000; text-align: center; }
+        .heart-anim { font-size: 100px; animation: beat 0.8s infinite alternate; }
+        @keyframes beat { from { transform: scale(1); } to { transform: scale(1.2); } }
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; align-items:center; justify-content:center; z-index:9999; }
     </style>
 </head>
 <body>
 
-<div id="loading">💝 Connecting to Our Love...</div>
+<div id="loading">💝 Thinking of You...</div>
 
-<div id="love-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 75, 43, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 1000; text-align: center;">
-    <div style="font-size: 100px; animation: beat 0.8s infinite alternate;">❤️</div>
-    <h1>I Love You!</h1>
-    <p id="overlay-msg">Goal reached! +10 Love Coins 🪙</p>
-    <button style="background: white; color: #ff4b2b; margin-top: 20px;" onclick="document.getElementById('love-overlay').style.display='none'">Yay! ❤️</button>
+<div id="love-overlay">
+    <div class="heart-anim">❤️</div>
+    <h1 style="font-size: 3rem;">I Love You!</h1>
+    <p>Target reached! You're amazing. 😘</p>
+    <button style="background: white; color: #ff4b2b; width: 150px; margin-top: 20px;" onclick="document.getElementById('love-overlay').style.display='none'">My Love ❤️</button>
 </div>
 
 <div class="container">
-    <div class="main-tabs">
-        <button id="t-home" class="active" onclick="showPage('home')">🏠 Tracker</button>
-        <button id="t-rewards" onclick="showPage('rewards')">🎁 Shop</button>
-        <button id="t-pass" onclick="showPage('pass')">📜 Passbook</button>
-    </div>
-
-    <div id="p-home" class="page active">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#d63031;">
-                <span>🎯 Goal: <span id="display-goal">2000</span>ml</span>
-                <span style="color:#b8860b;">🪙 <span id="coin-count">0</span> Coins</span>
-            </div>
-            <div class="progress-box">
-                <div id="progress" class="circular-progress">
-                    <div class="inner-circle">
-                        <span id="current-ml" style="font-size:1.8rem; font-weight:bold; color:#3498db;">0</span>
-                        <span style="color:#777; font-size:0.8rem;">ml total</span>
-                    </div>
+    <div class="card">
+        <div class="header-stats">
+            <span>🎯 Target: <span id="display-goal">2000</span>ml</span>
+            <span style="color:#b8860b;">🪙 <span id="coin-count">0</span> Coins</span>
+        </div>
+        <div class="progress-box">
+            <div id="progress" class="circular-progress">
+                <div class="inner-circle">
+                    <span id="current-ml" style="font-size:1.8rem; font-weight:bold; color:#3498db;">0</span>
+                    <span style="color:#777; font-size:0.8rem;">ml total</span>
                 </div>
             </div>
-            <input type="number" id="drink-amount" value="250">
-            <div style="display:flex; width:95%; margin: 0 auto;">
-                <button class="btn-drink" onclick="drinkWater()">Drink 💧</button>
-                <button class="btn-reset" onclick="resetToday()">Reset 🔄</button>
-            </div>
         </div>
-        <div class="card"><canvas id="waterChart"></canvas></div>
+        <input type="number" id="drink-amount" value="250">
+        <button class="btn-drink" onclick="drinkWater()">Drink Water 💧</button>
     </div>
 
-    <div id="p-rewards" class="page">
-        <div class="card">
-            <h3 style="color:#d63031;">🎁 Reward Shop</h3>
-            <div class="entry"><span>Hug (🫂)</span><button style="background:#6c5ce7;" onclick="redeem(50, 'Hug 🫂')">50</button></div>
-            <div class="entry"><span>Kiss (😘)</span><button style="background:#6c5ce7;" onclick="redeem(100, 'Kiss 😘')">100</button></div>
-            <div class="entry"><span>Special Date (🕯️)</span><button style="background:#6c5ce7;" onclick="redeem(500, 'Special Date 🕯️')">500</button></div>
-        </div>
-        <div class="card">
-            <h3>📜 Unclaimed Kisses/Hugs</h3>
-            <div id="history-list" style="text-align:left;"></div>
-            <button style="background:#2ecc71; width:100%; margin-top:15px;" onclick="clearHistory()">Received in Person ✅</button>
-        </div>
+    <div class="card">
+        <h3 style="color:#d63031; margin:0 0 5px 0;">Goal Request</h3>
+        <input type="number" id="request-goal-input" placeholder="New target ml">
+        <button class="btn-request" onclick="sendRequest()">Ask Him to Change Goal 💌</button>
     </div>
 
-    <div id="p-pass" class="page">
-        <div class="card"><h3>🪙 Passbook History</h3><div id="passbook-list" style="text-align:left;"></div></div>
-        <div class="card"><h3>⚙️ Settings</h3><input type="number" id="set-goal"><button style="background:#ff7675; width:100%;" onclick="updateGoal()">Save Goal</button></div>
+    <div class="card">
+        <h3 style="color:#d63031; margin:0 0 10px 0;">📜 History & Streaks</h3>
+        <div id="passbook-list" style="text-align:left; max-height:250px; overflow-y:auto;"></div>
     </div>
 </div>
 
@@ -119,65 +84,79 @@
         projectId: "watertracker-7c2d3",
         storageBucket: "watertracker-7c2d3.firebasestorage.app",
         messagingSenderId: "1085308071765",
-        appId: "1:1085308071765:web:4fd76906f520bbde2b09dc",
-        measurementId: "G-5C8G0H8Q9P"
+        appId: "1:1085308071765:web:4fd76906f520bbde2b09dc"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let stats = { daily: {}, coins: 0, goal: 2000, history: [], passbook: [] };
-    let chart;
+    let stats = { daily: {}, coins: 0, goal: 2000, passbook: [], lastPenaltyCheck: "", streak: 0 };
 
     db.ref('love_data').on('value', (snap) => {
         if(snap.exists()) stats = snap.val();
         document.getElementById('loading').style.display = 'none';
+        checkYesterdayPenalty();
         updateUI();
     });
 
+    function checkYesterdayPenalty() {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yKey = yesterday.toLocaleDateString().replace(/\//g, '-');
+        const todayKey = today.toLocaleDateString().replace(/\//g, '-');
+
+        if (stats.lastPenaltyCheck !== todayKey) {
+            const yIntake = stats.daily[yKey] || 0;
+            if (yIntake < stats.goal) {
+                const diff = stats.goal - yIntake;
+                const penaltyAmount = Math.floor(diff / 500) * 5;
+                if (penaltyAmount > 0) {
+                    stats.coins -= penaltyAmount;
+                    logPass(`Penalty: Missed Target (${yKey})`, -penaltyAmount);
+                }
+                stats.streak = 0; // Reset streak on miss
+            }
+            stats.lastPenaltyCheck = todayKey;
+            db.ref('love_data').set(stats);
+        }
+    }
+
     function drinkWater() {
-        const amt = parseInt(document.getElementById('drink-amount').value) || 250;
+        const amt = parseInt(document.getElementById('drink-amount').value) || 0;
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
         const old = stats.daily[today] || 0;
         stats.daily[today] = old + amt;
 
         if (stats.daily[today] >= stats.goal && old < stats.goal) {
             stats.coins += 10;
-            logPass("Goal Reached! ❤️", 10);
+            stats.streak = (stats.streak || 0) + 1;
+            logPass("Target Reached! ❤️", 10);
+            
+            // 3-Day Streak Bonus logic
+            if (stats.streak % 3 === 0) {
+                stats.coins += 5;
+                logPass("3-Day Streak Bonus! 🔥", 5);
+                alert("Wow! 3-day streak bonus! +5 Coins 🔥");
+            }
+            
             document.getElementById('love-overlay').style.display = 'flex';
         }
-        
-        const oldBonus = Math.floor((old - stats.goal) / 1000);
-        const newBonus = Math.floor((stats.daily[today] - stats.goal) / 1000);
-        if (newBonus > oldBonus && newBonus > 0) {
-            stats.coins += 5;
-            logPass("1L Extra Bonus! 🌟", 5);
-        }
-
         db.ref('love_data').set(stats);
+    }
+
+    function sendRequest() {
+        const val = document.getElementById('request-goal-input').value;
+        if(val > 0) {
+            stats.request = "Request: " + val + "ml";
+            db.ref('love_data').set(stats);
+            alert("Request sent to him! 😘");
+        }
     }
 
     function logPass(msg, amt) {
         if(!stats.passbook) stats.passbook = [];
         stats.passbook.unshift({ msg, amt, date: new Date().toLocaleDateString() });
     }
-
-    function updateGoal() {
-        const g = parseInt(document.getElementById('set-goal').value);
-        if(g > 0) { stats.goal = g; db.ref('love_data').set(stats); alert("Goal set!"); }
-    }
-
-    function redeem(cost, item) {
-        if(stats.coins >= cost) {
-            stats.coins -= cost;
-            if(!stats.history) stats.history = [];
-            stats.history.unshift({ item, date: new Date().toLocaleDateString() });
-            logPass(`Spent on ${item}`, -cost);
-            db.ref('love_data').set(stats);
-        } else { alert("Not enough coins! ❤️"); }
-    }
-
-    function clearHistory() { if(confirm("Received them all? 🥰")) { stats.history = []; db.ref('love_data').set(stats); } }
-    function resetToday() { if(confirm("Reset today's water?")) { stats.daily[new Date().toLocaleDateString().replace(/\//g, '-')] = 0; db.ref('love_data').set(stats); } }
 
     function updateUI() {
         const today = new Date().toLocaleDateString().replace(/\//g, '-');
@@ -188,30 +167,13 @@
         const p = Math.min((curr / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(#00d2ff ${p}deg, #ffebee 0deg)`;
         
-        document.getElementById('history-list').innerHTML = (stats.history || []).map(h => `<div class="entry"><span>${h.item}</span><small>${h.date}</small></div>`).join('') || '<p style="text-align:center; color:#999;">No claims yet</p>';
-        document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `<div class="entry"><span>${p.msg}</span><b style="color:${p.amt>0?'green':'red'}">${p.amt>0?'+':''}${p.amt}</b></div>`).join('') || '<p style="text-align:center; color:#999;">No history yet</p>';
-        
-        renderChart();
+        document.getElementById('passbook-list').innerHTML = (stats.passbook || []).map(p => `
+            <div class="entry">
+                <span class="${p.msg.includes('Streak') ? 'streak-text' : ''}">${p.msg}</span>
+                <b style="color:${p.amt > 0 ? 'green' : 'red'}">${p.amt > 0 ? '+' : ''}${p.amt}</b>
+            </div>
+        `).join('') || '<p style="text-align:center;color:#999;">No history yet</p>';
     }
-
-    function showPage(p) {
-        document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.main-tabs button').forEach(e => e.classList.remove('active'));
-        document.getElementById('p-' + p).classList.add('active');
-        document.getElementById('t-' + p).classList.add('active');
-    }
-
-    function renderChart() {
-        const ctx = document.getElementById('waterChart').getContext('2d');
-        if(chart) chart.destroy();
-        const dates = Object.keys(stats.daily).filter(d => !d.includes("-p")).sort().slice(-7);
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: dates, datasets: [{ label: 'ml', data: dates.map(d => stats.daily[d]), backgroundColor: '#00d2ff', borderRadius: 10 }] },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-    }
-    init();
 </script>
 </body>
 </html>
