@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Our Love Hydration</title>
+    
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/240/droplet.png">
+    <meta name="apple-mobile-web-app-title" content="Love Water">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -13,65 +19,61 @@
             --gold: #f1c40f;
         }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             background: linear-gradient(to bottom, #ffafbd, #ffc3a0);
             margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
         }
-        .container { width: 100%; max-width: 400px; }
+        .container { width: 100%; max-width: 400px; padding-bottom: 40px; }
         .card { 
-            background: rgba(255, 255, 255, 0.9); border-radius: 25px; 
+            background: rgba(255, 255, 255, 0.95); border-radius: 25px; 
             padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
             margin-bottom: 15px; text-align: center; border: 2px solid white;
         }
         
         .header-stats { display: flex; justify-content: space-between; font-weight: bold; color: #d63031; }
-        .coin-balance { color: var(--gold); font-size: 1.2rem; text-shadow: 1px 1px #000; }
+        .coin-balance { color: #b8860b; font-size: 1.1rem; }
 
-        /* Romantic Progress Ring */
         .progress-box { position: relative; width: 160px; height: 160px; margin: 15px auto; }
         .circular-progress { 
             width: 100%; height: 100%; border-radius: 50%; display: flex; 
             align-items: center; justify-content: center; 
             background: conic-gradient(var(--water-blue) 0deg, #ffebee 0deg);
-            transition: 0.5s ease-in-out;
+            transition: 0.5s ease;
         }
         .inner-circle { width: 130px; height: 130px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; }
 
-        /* Buttons & Inputs */
-        input { width: 70%; padding: 10px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; outline: none; }
-        button { 
-            padding: 12px 20px; border: none; border-radius: 20px; 
-            color: white; font-weight: bold; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); width: 100%; }
-        .btn-tab { background: #ff7675; margin: 5px; flex: 1; }
-        .btn-tab.active { background: #d63031; }
-        .btn-redeem { background: #6c5ce7; font-size: 0.8rem; padding: 5px 10px; }
+        input { width: 80%; padding: 12px; border-radius: 15px; border: 1px solid #ffafbd; margin: 10px 0; font-size: 1rem; text-align: center; }
+        button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); flex: 2; font-size: 1rem; }
+        .btn-reset-day { background: #fab1a0; flex: 1; font-size: 0.8rem; margin-left: 10px; }
+        
+        .btn-tab { background: #ff7675; margin: 5px; flex: 1; opacity: 0.6; }
+        .btn-tab.active { background: #d63031; opacity: 1; }
+        .btn-redeem { background: #6c5ce7; font-size: 0.8rem; min-width: 80px; }
+        .btn-clear { background: #2ecc71; width: 100%; margin-top: 15px; font-size: 0.9rem; }
 
-        /* Animation Overlay */
         #love-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 75, 43, 0.9); display: none;
+            background: rgba(255, 75, 43, 0.95); display: none;
             flex-direction: column; align-items: center; justify-content: center;
-            color: white; z-index: 1000; animation: fadeIn 0.5s;
+            color: white; z-index: 1000; text-align: center; padding: 20px;
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .heart-anim { font-size: 80px; animation: beat 0.8s infinite alternate; }
+        .heart-anim { font-size: 100px; animation: beat 0.8s infinite alternate; }
         @keyframes beat { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-        /* Rewards Table */
-        .reward-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .reward-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ffebee; }
+        .history-list { text-align: left; max-height: 200px; overflow-y: auto; font-size: 0.9rem; margin-top: 10px;}
+        .history-entry { padding: 8px 0; border-bottom: 1px dashed #ddd; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-<div id="love-overlay" onclick="this.style.display='none'">
+<div id="love-overlay">
     <div class="heart-anim">❤️</div>
-    <h1>I Love You!</h1>
-    <p>You earned 10 Love Coins! 💖</p>
-    <button onclick="this.parentElement.style.display='none'">Continue My Love</button>
+    <h1 style="font-size: 2.5rem;">I Love You!</h1>
+    <p style="font-size: 1.2rem;">Goal reached! +10 Love Coins 🪙</p>
+    <button style="background: white; color: #ff4b2b; margin-top: 20px;" onclick="closeOverlay()">Keep Hydrated, My Love</button>
 </div>
 
 <div class="container">
@@ -80,47 +82,42 @@
             <span>🎯 Goal: <span id="display-goal">2000</span>ml</span>
             <span class="coin-balance">🪙 <span id="coin-count">0</span> Love Coins</span>
         </div>
-        
         <div class="progress-box">
             <div id="progress" class="circular-progress">
                 <div class="inner-circle">
                     <span id="current-ml" style="font-size: 1.8rem; font-weight: bold; color: #3498db;">0</span>
-                    <span style="color: #777;">ml total</span>
+                    <span style="color: #777; font-size: 0.8rem;">ml total</span>
                 </div>
             </div>
         </div>
-
-        <input type="number" id="drink-amount" placeholder="Amount (ml) e.g. 250">
-        <button class="btn-drink" onclick="drinkWater()">Drink Water 💧</button>
+        <input type="number" id="drink-amount" value="250">
+        <div style="display: flex; width: 90%; margin: 0 auto;">
+            <button class="btn-drink" onclick="drinkWater()">Drink Water 💧</button>
+            <button class="btn-reset-day" onclick="resetTodayIntake()">Reset 🔄</button>
+        </div>
     </div>
 
     <div class="card">
-        <h3>❤️ Love Rewards</h3>
-        <div class="reward-item">
-            <span>Hug (🫂)</span>
-            <button class="btn-redeem" onclick="redeem(50, 'Hug')">50 Coins</button>
+        <h3 style="color: #d63031; margin: 0 0 10px 0;">🎁 Redeem Rewards</h3>
+        <div class="reward-item"><span>Make a Wish (✨)</span><button class="btn-redeem" onclick="redeem(30, 'Wish ✨')">30 Coins</button></div>
+        <div class="reward-item"><span>Hug (🫂)</span><button class="btn-redeem" onclick="redeem(50, 'Hug 🫂')">50 Coins</button></div>
+        <div class="reward-item"><span>Kiss (😘)</span><button class="btn-redeem" onclick="redeem(100, 'Kiss 😘')">100 Coins</button></div>
+    </div>
+
+    <div class="card">
+        <h3 style="color: #d63031; margin: 0 0 10px 0;">📜 Our Love History</h3>
+        <div id="history-container" class="history-list">
+            <p style="color:#999; text-align:center;">No rewards redeemed yet...</p>
         </div>
-        <div class="reward-item">
-            <span>Kiss (😘)</span>
-            <button class="btn-redeem" onclick="redeem(100, 'Kiss')">100 Coins</button>
-        </div>
-        <div class="reward-item">
-            <span>Surprise Date (🕯️)</span>
-            <button class="btn-redeem" onclick="redeem(500, 'Date')">500 Coins</button>
-        </div>
+        <button id="clear-btn" class="btn-clear" onclick="clearHistory()" style="display:none;">Received in Person ✅</button>
     </div>
 
     <div class="card">
         <div style="display: flex;">
-            <button class="btn-tab active" id="btn-daily" onclick="switchChart('daily')">Daily</button>
-            <button class="btn-tab" id="btn-weekly" onclick="switchChart('weekly')">Weekly</button>
+            <button class="btn-tab active" id="btn-daily" onclick="switchChart('daily')">Today</button>
+            <button class="btn-tab" id="btn-weekly" onclick="switchChart('weekly')">History</button>
         </div>
         <canvas id="waterChart" style="margin-top: 15px;"></canvas>
-    </div>
-
-    <div class="card" style="font-size: 0.8rem; opacity: 0.8;">
-        Settings: Daily Goal (ml) <input type="number" id="set-goal" style="width: 50%;"> 
-        <button style="background: #fab1a0;" onclick="updateGoal()">Save</button>
     </div>
 </div>
 
@@ -129,49 +126,70 @@
         daily: {}, 
         coins: 0, 
         goal: 2000,
-        redeemed: [] 
+        history: [] 
     };
     let chart;
     let currentView = 'daily';
 
     function init() {
-        document.getElementById('display-goal').innerText = stats.goal;
         updateUI();
         renderChart();
     }
 
-    function updateGoal() {
-        const val = document.getElementById('set-goal').value;
-        if(val > 0) {
-            stats.goal = parseInt(val);
-            saveAndRefresh();
-        }
-    }
-
     function drinkWater() {
         const amount = parseInt(document.getElementById('drink-amount').value) || 250;
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString();
         const oldVal = stats.daily[today] || 0;
-        
         stats.daily[today] = oldVal + amount;
-        
-        // Success Animation Logic
         if (stats.daily[today] >= stats.goal && oldVal < stats.goal) {
             stats.coins += 10;
             document.getElementById('love-overlay').style.display = 'flex';
         }
-
         saveAndRefresh();
     }
+
+    function resetTodayIntake() {
+        if(confirm("Baby, do you want to reset your water intake for today? (Your coins will stay safe!)")) {
+            const today = new Date().toLocaleDateString();
+            stats.daily[today] = 0;
+            saveAndRefresh();
+        }
+    }
+
+    function closeOverlay() { document.getElementById('love-overlay').style.display = 'none'; }
 
     function redeem(cost, item) {
         if(stats.coins >= cost) {
             stats.coins -= cost;
-            alert(`Yay! You redeemed a ${item}! Save it for when you see him next! 😘`);
+            stats.history.unshift({ item: item, date: new Date().toLocaleDateString() });
             saveAndRefresh();
         } else {
-            alert("Not enough Love Coins yet! Keep drinking water, baby! ❤️");
+            alert("Keep drinking! You need more coins for this reward. ❤️");
         }
+    }
+
+    function clearHistory() {
+        if(confirm("Did you receive all your hugs and kisses? 🥰")) {
+            stats.history = [];
+            saveAndRefresh();
+        }
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('history-container');
+        const clearBtn = document.getElementById('clear-btn');
+        if (stats.history.length === 0) {
+            container.innerHTML = '<p style="color:#999; text-align:center;">No rewards redeemed yet...</p>';
+            clearBtn.style.display = 'none';
+            return;
+        }
+        clearBtn.style.display = 'block';
+        container.innerHTML = stats.history.map(h => `
+            <div class="history-entry">
+                <span>${h.item}</span>
+                <span style="color:#888; font-size:0.7rem;">${h.date}</span>
+            </div>
+        `).join('');
     }
 
     function switchChart(type) {
@@ -185,7 +203,7 @@
         const ctx = document.getElementById('waterChart').getContext('2d');
         chart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Water (ml)', data: [], backgroundColor: '#3498db', borderRadius: 10 }] },
+            data: { labels: [], datasets: [{ label: 'ml', data: [], backgroundColor: '#00d2ff', borderRadius: 10 }] },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
         updateChartData();
@@ -194,21 +212,20 @@
     function updateChartData() {
         const dates = Object.keys(stats.daily).sort();
         const displayDates = currentView === 'daily' ? dates.slice(-1) : dates.slice(-7);
-        
-        chart.data.labels = displayDates.map(d => d.split('-').slice(1).join('/'));
+        chart.data.labels = displayDates;
         chart.data.datasets[0].data = displayDates.map(d => stats.daily[d]);
         chart.update();
     }
 
     function updateUI() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString();
         const current = stats.daily[today] || 0;
         document.getElementById('current-ml').innerText = current;
         document.getElementById('coin-count').innerText = stats.coins;
         document.getElementById('display-goal').innerText = stats.goal;
-
         const percent = Math.min((current / stats.goal) * 360, 360);
         document.getElementById('progress').style.background = `conic-gradient(var(--water-blue) ${percent}deg, #ffebee 0deg)`;
+        renderHistory();
     }
 
     function saveAndRefresh() {
@@ -216,7 +233,6 @@
         updateUI();
         updateChartData();
     }
-
     init();
 </script>
 </body>
