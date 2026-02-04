@@ -47,6 +47,7 @@
         button { padding: 12px 20px; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-drink { background: linear-gradient(to right, #00d2ff, #3a7bd5); flex: 2; font-size: 1rem; }
         .btn-reset-day { background: #fab1a0; flex: 1; font-size: 0.8rem; margin-left: 10px; }
+        .btn-save { background: #ff7675; width: 100%; margin-top: 10px; }
         
         .btn-tab { background: #ff7675; margin: 5px; flex: 1; opacity: 0.6; }
         .btn-tab.active { background: #d63031; opacity: 1; }
@@ -107,7 +108,7 @@
     <div class="card">
         <h3 style="color: #d63031; margin: 0 0 10px 0;">📜 Our Love History</h3>
         <div id="history-container" class="history-list">
-            <p style="color:#999; text-align:center;">No rewards redeemed yet...</p>
+            <p style="color:#999; text-align:center;">No rewards yet...</p>
         </div>
         <button id="clear-btn" class="btn-clear" onclick="clearHistory()" style="display:none;">Received in Person ✅</button>
     </div>
@@ -118,6 +119,13 @@
             <button class="btn-tab" id="btn-weekly" onclick="switchChart('weekly')">History</button>
         </div>
         <canvas id="waterChart" style="margin-top: 15px;"></canvas>
+    </div>
+
+    <div class="card">
+        <h3 style="color: #d63031; margin: 0 0 10px 0;">⚙️ Goal Settings</h3>
+        <p style="font-size: 0.8rem; color: #777;">Set your daily target (ml):</p>
+        <input type="number" id="input-goal" placeholder="e.g. 2500">
+        <button class="btn-save" onclick="updateGoal()">Save New Goal</button>
     </div>
 </div>
 
@@ -132,8 +140,18 @@
     let currentView = 'daily';
 
     function init() {
+        document.getElementById('input-goal').value = stats.goal;
         updateUI();
         renderChart();
+    }
+
+    function updateGoal() {
+        const newGoal = parseInt(document.getElementById('input-goal').value);
+        if(newGoal > 0) {
+            stats.goal = newGoal;
+            saveAndRefresh();
+            alert("Goal updated successfully! ❤️");
+        }
     }
 
     function drinkWater() {
@@ -164,7 +182,7 @@
             stats.history.unshift({ item: item, date: new Date().toLocaleDateString() });
             saveAndRefresh();
         } else {
-            alert("Keep drinking baby! You need more coins. ❤️");
+            alert("Keep drinking baby! You need more coins for this reward. ❤️");
         }
     }
 
