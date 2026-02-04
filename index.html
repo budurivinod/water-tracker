@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydration Quest</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #f1c40f;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; padding: 20px; box-sizing: border-box; }
+        .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        
+        /* Stats & Wallet */
+        .wallet { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .coins { color: var(--secondary); font-weight: bold; font-size: 1.2rem; }
+
+        /* Progress Circle */
+        .progress-box { position: relative; width: 150px; height: 150px; margin: 20px auto; }
+        .circular-progress { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--primary) 0deg, #ddd 0deg); transition: 0.3s; }
+        .inner-circle { width: 120px; height: 120px; background: white; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* Controls */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-reset { background: #e74c3c; color: white; }
+        input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; width: 80%; margin-bottom: 10px; }
+
+        .tabs { display: flex; justify-content: space-around; margin-top: 20px; }
+        .tab-btn { background: none; color: #777; border-bottom: 2px solid transparent; border-radius: 0; }
+        .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        canvas { max-width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="wallet">
+            <span>💧 Goal: <span id="display-goal">2000</span>ml</span>
+            <span class="coins">💰 <span id="coin-count">0</span> Coins</span>
+        </div>
+        
+        <div class="progress-box">
+            <div id="progress" class="circular-progress">
+                <div class="inner-circle">
+                    <span id="current-ml" style="font-size: 1.5rem; font-weight: bold;">0</span>
+                    <span style="font-size: 0.8rem; color: #777;">ml</span>
+                </div>
+            </div>
+        </div>
+
+        <input type="number" id="drink-amount" placeholder="Amount in ml (e.g. 250)">
+        <div class="controls">
+            <button class="btn-add" onclick="drinkWater()">Drink 💧</button>
+            <button class="btn-reset" onclick="resetToday()">Reset</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Settings</h3>
+        <input type="number" id="set-goal" placeholder="Set Daily Goal (ml)">
+        <button class="btn-add" onclick="updateGoal()">Set New Goal</button>
+    </div>
+
+    <div class="card">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="updateChart('daily')">Daily</button>
+            <button class="tab-btn" onclick="updateChart('weekly')">Weekly</button>
+        </div>
+        <canvas id="waterChart"></canvas>
+    </div>
+</div>
+
+<script>
+    let stats = JSON.parse(localStorage.getItem('waterStats')) || { daily: {}, coins: 0, goal: 2000 };
+    let chart;
+
+    function init() {
+        document.getElementById('display-goal').innerText = stats.goal;
+        document.getElementById('coin-count').innerText = stats.coins;
+        updateUI();
+        renderChart();
+    }
+
+    function updateGoal() {
+        const newGoal = document.getElementById('set-goal').value;
+        if (newGoal > 0) {
+            stats.goal = parseInt(newGoal);
+            save();
+            document.getElementById('display-goal').innerText = stats.goal;
+            updateUI();
+        }
+    }
+
+    function drinkWater() {
+        const amount = parseInt(document.getElementById('drink-amount').value) || 250;
+        const today = new Date().toISOString().split('T')[0];
+        
+        stats.daily[today] = (stats.daily[today] || 0) + amount;
+        
+        // Reward logic: If they just crossed the goal
+        if (stats.daily[today] >= stats.goal && (stats.daily[today] - amount) < stats.goal) {
+            stats.coins += 10;
+            alert("Goal Reached! 🏆 You earned 10 coins!");
+        }
+
+        save();
+        updateUI();
+        updateChart('daily');
+    }
+
+    function updateUI() {
+        const today = new Date().toISOString().split('T')[0];
+        const current = stats.daily[today] || 0;
+        document.getElementById('current-ml').innerText = current;
+        document.getElementById('coin-count').innerText = stats.coins;
+
+        const percent = Math.min((current / stats.goal) * 360, 360);
+        document.getElementById('progress').style.background = `conic-gradient(#3498db ${percent}deg, #ddd 0deg)`;
+    }
+
+    function save() {
+        localStorage.setItem('waterStats', JSON.stringify(stats));
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('waterChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Water Intake (ml)', data: [], backgroundColor: '#3498db' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+        updateChart('daily');
+    }
+
+    function updateChart(view) {
+        const days = Object.keys(stats.daily).slice(-7);
+        chart.data.labels = days;
+        chart.data.datasets[0].data = days.map(d => stats.daily[d]);
+        chart.update();
+    }
+
+    function resetToday() {
+        if(confirm("Start fresh for today?")) {
+            const today = new Date().toISOString().split('T')[0];
+            stats.daily[today] = 0;
+            save();
+            updateUI();
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
